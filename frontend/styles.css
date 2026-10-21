@@ -1,0 +1,263 @@
+﻿:root {
+  --primary: #2d3748;
+  --primary-accent: #3182ce;
+  --secondary: #38a169;
+  --bg-color: #f7fafc;
+  --card-bg: #ffffff;
+  --text-main: #1a202c;
+  --text-muted: #718096;
+  --border-color: #e2e8f0;
+  --error-bg: #fed7d7;
+  --error-text: #9b2c2c;
+  --success-bg: #c6f6d5;
+  --success-text: #22543d;
+  --radius: 8px;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.container {
+  width: 100%;
+  max-width: 900px;
+}
+
+.app-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.app-header h1 {
+  font-size: 1.8rem;
+  color: var(--primary);
+}
+
+.app-header p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.grid-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 768px) {
+  .grid-layout {
+    grid-template-columns: 1fr 1fr;
+  }
+  .full-width {
+    grid-column: span 2;
+  }
+}
+
+.card {
+  background-color: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.card h2 {
+  font-size: 1.2rem;
+  margin-bottom: 16px;
+  color: var(--primary);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 14px;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+}
+
+.form-group input,
+.form-group select {
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: var(--primary-accent);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.inline-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 600px) {
+  .inline-form {
+    grid-template-columns: 1fr 1fr auto;
+    align-items: end;
+  }
+}
+
+.btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 0.2s;
+}
+
+.btn:hover {
+  opacity: 0.9;
+}
+
+.btn-primary {
+  background-color: var(--primary-accent);
+  color: white;
+}
+
+.btn-secondary {
+  background-color: var(--secondary);
+  color: white;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.result-box {
+  margin-top: 16px;
+  padding: 12px;
+  background-color: #ebf8ff;
+  border-left: 4px solid var(--primary-accent);
+  border-radius: 4px;
+}
+
+.result-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.result-box h3 {
+  color: var(--primary-accent);
+  font-size: 1.4rem;
+  margin-top: 4px;
+}
+
+.history-list {
+  list-style: none;
+}
+
+.history-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}
+
+.empty-msg {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 12px 0;
+}
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: var(--shadow);
+  z-index: 1000;
+}
+
+.toast.error {
+  background-color: var(--error-bg);
+  color: var(--error-text);
+}
+
+.toast.success {
+  background-color: var(--success-bg);
+  color: var(--success-text);
+}
+
+.hidden {
+  display: none !important;
+}
+
+.spinner {
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top: 3px solid white;
+  width: 18px;
+  height: 18px;
+  animation: spin 0.8s linear infinite;
+}
+
+.spinner-container {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.spinner-container .spinner {
+  border-color: rgba(0, 0, 0, 0.1);
+  border-top-color: var(--primary-accent);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

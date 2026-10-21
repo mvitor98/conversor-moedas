@@ -1,0 +1,100 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conversor de Moedas - Fintech</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header class="app-header">
+      <h1>💱 Conversor de Moedas</h1>
+      <p>Consulte taxas de câmbio atualizadas em tempo real</p>
+    </header>
+
+    <main class="grid-layout">
+      <!-- Seção 1: Conversor principal -->
+      <section class="card">
+        <h2>Converter Valor</h2>
+        <form id="convert-form">
+          <div class="form-group">
+            <label for="amount">Valor:</label>
+            <input type="number" id="amount" step="any" min="0.01" placeholder="Ex: 100.00" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="origin-currency">Moeda Origem:</label>
+              <select id="origin-currency" required>
+                <option value="BRL" selected>BRL (Real)</option>
+                <option value="USD">USD (Dólar)</option>
+                <option value="ARS">ARS (Peso Arg.)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="destination-currency">Moeda Destino:</label>
+              <select id="destination-currency" required>
+                <option value="ARS" selected>ARS (Peso Arg.)</option>
+                <option value="USD">USD (Dólar)</option>
+                <option value="BRL">BRL (Real)</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" id="btn-convert" class="btn btn-primary">
+            <span class="btn-text">Converter</span>
+            <div class="spinner hidden" id="convert-spinner"></div>
+          </button>
+        </form>
+
+        <div id="convert-result" class="result-box hidden">
+          <span class="result-label">Resultado:</span>
+          <h3 id="result-value">0.00</h3>
+        </div>
+      </section>
+
+      <!-- Seção 2: Histórico recente -->
+      <section class="card">
+        <div class="card-header">
+          <h2>Últimas 5 Conversões</h2>
+          <button id="btn-refresh-history" class="btn-icon" title="Atualizar Histórico">🔄</button>
+        </div>
+        <div id="history-loading" class="spinner-container hidden">
+          <div class="spinner"></div>
+        </div>
+        <ul id="history-list" class="history-list">
+          <li class="empty-msg">Nenhuma conversão realizada ainda.</li>
+        </ul>
+      </section>
+
+      <!-- Seção 3: Cadastrar/Atualizar Taxa -->
+      <section class="card full-width">
+        <h2>Cadastrar / Atualizar Taxa (Base 1 USD)</h2>
+        <form id="rate-form" class="inline-form">
+          <div class="form-group">
+            <label for="rate-currency">Moeda (ex: EUR, CLP, BRL):</label>
+            <input type="text" id="rate-currency" placeholder="Ex: EUR" maxlength="5" required>
+          </div>
+
+          <div class="form-group">
+            <label for="rate-value">Quanto 1 USD vale nesta moeda?</label>
+            <input type="number" id="rate-value" step="any" min="0.0001" placeholder="Ex: 0.92" required>
+          </div>
+
+          <button type="submit" id="btn-save-rate" class="btn btn-secondary">
+            <span class="btn-text">Salvar Taxa</span>
+            <div class="spinner hidden" id="rate-spinner"></div>
+          </button>
+        </form>
+      </section>
+    </main>
+
+    <!-- Banner de mensagens de feedback e erro -->
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
