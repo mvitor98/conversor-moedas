@@ -9,17 +9,17 @@ def get_redis_client():
     rest_token = os.getenv("UPSTASH_REDIS_REST_TOKEN", "").strip().strip('"').strip("'")
     redis_url = os.getenv("REDIS_URL", "").strip().strip('"').strip("'")
 
-    # 1. Modo HTTP REST (Upstash - Recomendado para Serverless)
+    # Modo 1: Upstash REST Client (HTTP)
     if rest_url and rest_token:
         try:
             from upstash_redis import Redis
 
-            logger.info("Conectado ao Upstash via HTTP REST Client.")
+            logger.info("Conectado com sucesso ao Upstash via HTTP REST.")
             return Redis(url=rest_url, token=rest_token)
         except ImportError:
-            logger.error("Pacote 'upstash-redis' não instalado.")
+            logger.error("Pacote 'upstash-redis' não encontrado no ambiente.")
 
-    # 2. Modo TCP (redis-py) com auto-correção de TLS para Upstash
+    # Modo 2: Conexão TCP (redis-py)
     if redis_url:
         import redis
 
@@ -42,7 +42,7 @@ def get_redis_client():
         )
         return redis.Redis(connection_pool=pool)
 
-    # 3. Ambiente Local (Apenas fora do Render)
+    # Modo 3: Ambiente Local (Apenas fora do Render)
     if not os.getenv("RENDER"):
         import redis
 
@@ -52,12 +52,10 @@ def get_redis_client():
         )
         return redis.Redis(connection_pool=pool)
 
-    # 4. Bloqueio no Render caso faltem variáveis de ambiente
-    env_vars_found = [k for k in os.environ.keys() if "REDIS" in k]
+    # Bloqueia a aplicação no Render se nenhuma variável for injetada
     msg = (
-        "ERRO CRÍTICO NO RENDER: Nenhuma variável de conexão Redis foi encontrada. "
-        f"Variáveis detectadas: {env_vars_found}. "
-        "Cadastre UPSTASH_REDIS_REST_URL e UPSTASH_REDIS_REST_TOKEN no Render."
+        "CRITICAL: Nenhuma variável de conexão Redis foi encontrada no Render! "
+        "Verifique 'UPSTASH_REDIS_REST_URL' e 'UPSTASH_REDIS_REST_TOKEN'."
     )
     logger.critical(msg)
     raise RuntimeError(msg)
