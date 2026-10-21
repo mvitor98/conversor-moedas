@@ -1,0 +1,12 @@
+{
+  "name": "conversor-frontend",
+  "version": "1.0.0",
+  "description": "Suite de testes do Frontend - Conversor de Moedas",
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0"
+  }
+}
