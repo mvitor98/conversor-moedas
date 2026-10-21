@@ -1,4 +1,4 @@
-﻿"""Testes unitários para a camada de Data Access Objects (DAOs).
+"""Testes unitários para a camada de Data Access Objects (DAOs).
 
 Valida o comportamento individual dos métodos de persistência e leitura de taxas
 e histórico de conversões no Redis utilizando dublês de teste (mocks).
@@ -55,7 +55,7 @@ def test_add_and_get_history() -> None:
     }
     dao.add_conversion(data)
     mock_redis.lpush.assert_called_once()
-    mock_redis.ltrim.assert_called_once_with("historico_conversoes", 0, 4)
+    mock_redis.ltrim.assert_called_once_with("historico_conversoes", 0, 9)
 
     history: List[Dict[str, Any]] = dao.get_recent_conversions()
     assert len(history) == 1
