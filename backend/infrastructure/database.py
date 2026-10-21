@@ -5,60 +5,49 @@ logger = logging.getLogger("conversor_moedas")
 
 
 def get_redis_client():
-    rest_url = os.getenv("UPSTASH_REDIS_REST_URL", "").strip().strip('"').strip("'")
-    rest_token = os.getenv("UPSTASH_REDIS_REST_TOKEN", "").strip().strip('"').strip("'")
-    redis_url = os.getenv("REDIS_URL", "").strip().strip('"').strip("'")
+    rest_url = os.getenv("UPSTASH_REDIS_REST_URL")
+    rest_token = os.getenv("UPSTASH_REDIS_REST_TOKEN")
 
-    # Modo 1: Upstash REST Client (HTTP)
+    # 1. FORÇAR UPSTASH REST SE AS VARIÁVEIS EXISTIREM (RENDER)
     if rest_url and rest_token:
+        rest_url = rest_url.strip().strip('"').strip("'")
+        rest_token = rest_token.strip().strip('"').strip("'")
+
         try:
             from upstash_redis import Redis
 
-            logger.info("Conectado com sucesso ao Upstash via HTTP REST.")
+            logger.info("Conectado ao Upstash via HTTP REST.")
             return Redis(url=rest_url, token=rest_token)
         except ImportError:
-            logger.error("Pacote 'upstash-redis' não encontrado no ambiente.")
+            msg = (
+                "ERRO FATAL: O pacote 'upstash-redis' não foi "
+                "instalado pelo Render. Limpe o Build Cache."
+            )
+            logger.critical(msg)
+            raise RuntimeError(msg)
 
-    # Modo 2: Conexão TCP (redis-py)
+    # 2. TENTAR TCP CASO REDIS_URL EXISTA
+    redis_url = os.getenv("REDIS_URL")
     if redis_url:
         import redis
 
-        if "upstash.io" in redis_url and redis_url.startswith("redis://"):
-            redis_url = redis_url.replace("redis://", "rediss://", 1)
-
-        ssl_kwargs = {}
-        if redis_url.startswith("rediss://"):
-            ssl_kwargs = {"ssl_cert_reqs": None}
-
-        logger.info(f"Conectado ao Redis via TCP: {redis_url.split('@')[-1]}")
+        redis_url = redis_url.strip().strip('"').strip("'")
+        ssl_kwargs = (
+            {"ssl_cert_reqs": None} if redis_url.startswith("rediss://") else {}
+        )
         pool = redis.ConnectionPool.from_url(
-            redis_url,
-            decode_responses=True,
-            socket_timeout=10,
-            socket_connect_timeout=10,
-            health_check_interval=15,
-            retry_on_timeout=True,
-            **ssl_kwargs,
+            redis_url, decode_responses=True, **ssl_kwargs
         )
         return redis.Redis(connection_pool=pool)
 
-    # Modo 3: Ambiente Local (Apenas fora do Render)
-    if not os.getenv("RENDER"):
-        import redis
+    # 3. MODO LOCAL
+    logger.warning("AVISO: Variáveis não encontradas. Conectando a localhost:6379.")
+    import redis
 
-        logger.info("Executando em ambiente local (localhost:6379).")
-        pool = redis.ConnectionPool.from_url(
-            "redis://localhost:6379", decode_responses=True
-        )
-        return redis.Redis(connection_pool=pool)
-
-    # Bloqueia a aplicação no Render se nenhuma variável for injetada
-    msg = (
-        "CRITICAL: Nenhuma variável de conexão Redis foi encontrada no Render! "
-        "Verifique 'UPSTASH_REDIS_REST_URL' e 'UPSTASH_REDIS_REST_TOKEN'."
+    pool = redis.ConnectionPool.from_url(
+        "redis://localhost:6379", decode_responses=True
     )
-    logger.critical(msg)
-    raise RuntimeError(msg)
+    return redis.Redis(connection_pool=pool)
 
 
 redis_client = get_redis_client()
