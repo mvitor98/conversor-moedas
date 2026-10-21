@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Conversor de Moedas - Fintech</title>
+  <link rel="icon" href="data:,">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -17,7 +18,7 @@
       <!-- Seção 1: Conversor principal -->
       <section class="card">
         <h2>Converter Valor</h2>
-        <form id="convert-form">
+        <form id="convert-form" onsubmit="return false;">
           <div class="form-group">
             <label for="amount">Valor:</label>
             <input type="number" id="amount" step="any" min="0.01" placeholder="Ex: 100.00" required>
@@ -43,7 +44,7 @@
             </div>
           </div>
 
-          <button type="submit" id="btn-convert" class="btn btn-primary">
+          <button type="button" id="btn-convert" class="btn btn-primary">
             <span class="btn-text">Converter</span>
             <div class="spinner hidden" id="convert-spinner"></div>
           </button>
@@ -72,7 +73,7 @@
       <!-- Seção 3: Cadastrar/Atualizar Taxa -->
       <section class="card full-width">
         <h2>Cadastrar / Atualizar Taxa (Base 1 USD)</h2>
-        <form id="rate-form" class="inline-form">
+        <form id="rate-form" class="inline-form" onsubmit="return false;">
           <div class="form-group">
             <label for="rate-currency">Moeda (ex: EUR, CLP, BRL):</label>
             <input type="text" id="rate-currency" placeholder="Ex: EUR" maxlength="5" required>
@@ -83,7 +84,7 @@
             <input type="number" id="rate-value" step="any" min="0.0001" placeholder="Ex: 0.92" required>
           </div>
 
-          <button type="submit" id="btn-save-rate" class="btn btn-secondary">
+          <button type="button" id="btn-save-rate" class="btn btn-secondary">
             <span class="btn-text">Salvar Taxa</span>
             <div class="spinner hidden" id="rate-spinner"></div>
           </button>
@@ -91,7 +92,6 @@
       </section>
     </main>
 
-    <!-- Banner de mensagens de feedback e erro -->
     <div id="toast" class="toast hidden"></div>
   </div>
 

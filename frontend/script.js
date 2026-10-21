@@ -1,21 +1,21 @@
-﻿// Configuração dinâmica da URL base da API
-const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-  ? "http://localhost:8000"
-  : "https://conversor-moedas-api.onrender.com"; // Será atualizada após o deploy na nuvem
+// Utiliza o proxy reverso /api configurado no Nginx do Docker ou localhost local
+const API_BASE_URL = window.location.port === "3000" ? "/api" : "http://localhost:8000";
+
+console.log("[Conversor] Frontend conectado à API via:", API_BASE_URL);
 
 // Elementos do DOM
-const convertForm = document.getElementById("convert-form");
-const rateForm = document.getElementById("rate-form");
+const btnConvert = document.getElementById("btn-convert");
+const btnSaveRate = document.getElementById("btn-save-rate");
+const btnRefreshHistory = document.getElementById("btn-refresh-history");
+
 const resultBox = document.getElementById("convert-result");
 const resultValue = document.getElementById("result-value");
 const historyList = document.getElementById("history-list");
-const btnRefreshHistory = document.getElementById("btn-refresh-history");
 const toast = document.getElementById("toast");
 
-// Funções Utilitárias UI
 function showToast(message, type = "error") {
   toast.textContent = message;
-  toast.className = 	oast ;
+  toast.className = `toast ${type}`;
   toast.classList.remove("hidden");
   setTimeout(() => {
     toast.classList.add("hidden");
@@ -25,54 +25,100 @@ function showToast(message, type = "error") {
 function toggleLoading(btnId, spinnerId, isLoading) {
   const btn = document.getElementById(btnId);
   const spinner = document.getElementById(spinnerId);
-  const btnText = btn.querySelector(".btn-text");
+  const btnText = btn ? btn.querySelector(".btn-text") : null;
 
   if (isLoading) {
-    btn.disabled = true;
-    spinner.classList.remove("hidden");
-    btnText.style.opacity = "0.5";
+    if (btn) btn.disabled = true;
+    if (spinner) spinner.classList.remove("hidden");
+    if (btnText) btnText.style.opacity = "0.5";
   } else {
-    btn.disabled = false;
-    spinner.classList.add("hidden");
-    btnText.style.opacity = "1";
+    if (btn) btn.disabled = false;
+    if (spinner) spinner.classList.add("hidden");
+    if (btnText) btnText.style.opacity = "1";
   }
 }
 
-// 1. Converter Moedas (Etapa 2)
-convertForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const amount = document.getElementById("amount").value;
+// Ação de Conversão
+async function executeConversion() {
+  const amountInput = document.getElementById("amount");
+  const amount = amountInput ? amountInput.value : "";
   const origin = document.getElementById("origin-currency").value;
   const destination = document.getElementById("destination-currency").value;
 
+  if (!amount || parseFloat(amount) <= 0) {
+    showToast("Informe um valor maior que zero para conversão.", "error");
+    if (amountInput) amountInput.focus();
+    return;
+  }
+
+  console.log(`[Conversor] Executando conversão: ${amount} ${origin} -> ${destination}`);
   toggleLoading("btn-convert", "convert-spinner", true);
   resultBox.classList.add("hidden");
 
   try {
-    const response = await fetch(${API_BASE_URL}/converter///);
+    const response = await fetch(`${API_BASE_URL}/converter/${amount}/${origin}/${destination}`);
     const data = await response.json();
 
     if (!response.ok) {
       throw new Error(data.erro || "Erro ao realizar a conversão.");
     }
 
-    resultValue.textContent = ${data.convertido.toLocaleString("pt-BR")} ;
+    const formattedVal = typeof data.convertido === "number" ? data.convertido.toLocaleString("pt-BR") : data.convertido;
+    resultValue.textContent = `${formattedVal} ${data.moeda_destino}`;
     resultBox.classList.remove("hidden");
-    loadHistory(); // Atualiza o histórico automaticamente
+    loadHistory();
   } catch (err) {
+    console.error("[Conversor Error]:", err);
     showToast(err.message, "error");
   } finally {
     toggleLoading("btn-convert", "convert-spinner", false);
   }
-});
+}
 
-// 2. Carregar Histórico (Etapa 3)
-async function loadHistory() {
-  const historyLoading = document.getElementById("history-loading");
-  historyLoading.classList.remove("hidden");
+// Ação de Salvar Taxa
+async function executeSaveRate() {
+  const currencyInput = document.getElementById("rate-currency");
+  const rateInput = document.getElementById("rate-value");
+
+  const currency = currencyInput.value.trim().toUpperCase();
+  const rate = rateInput.value;
+
+  if (!currency || !rate || parseFloat(rate) <= 0) {
+    showToast("Preencha a moeda e um valor de taxa maior que zero.", "error");
+    return;
+  }
+
+  toggleLoading("btn-save-rate", "rate-spinner", true);
 
   try {
-    const response = await fetch(${API_BASE_URL}/conversoes);
+    const response = await fetch(`${API_BASE_URL}/taxas/${currency}/${rate}`, {
+      method: "POST"
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.erro || "Erro ao cadastrar a taxa.");
+    }
+
+    showToast(`Taxa de ${data.moeda} salva com sucesso!`, "success");
+    currencyInput.value = "";
+    rateInput.value = "";
+    updateCurrencySelects(data.moeda);
+  } catch (err) {
+    console.error("[Rate Error]:", err);
+    showToast(err.message, "error");
+  } finally {
+    toggleLoading("btn-save-rate", "rate-spinner", false);
+  }
+}
+
+// Carregar Histórico
+async function loadHistory() {
+  const historyLoading = document.getElementById("history-loading");
+  if (historyLoading) historyLoading.classList.remove("hidden");
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/conversoes`);
     const data = await response.json();
 
     if (response.status === 404) {
@@ -84,61 +130,32 @@ async function loadHistory() {
       throw new Error("Erro ao carregar o histórico.");
     }
 
-    historyList.innerHTML = data.map(item =>
-      <li class="history-item">
-        <span> <strong></strong> ➔ <strong></strong></span>
-        <strong> </strong>
-      </li>
-    ).join("");
+    historyList.innerHTML = data.map(item => {
+      const valFormatted = typeof item.convertido === "number" ? item.convertido.toLocaleString("pt-BR") : item.convertido;
+      return `<li class="history-item">
+        <span>${item.valor} <strong>${item.moeda_origem}</strong> ➔ <strong>${item.moeda_destino}</strong></span>
+        <strong>${valFormatted} ${item.moeda_destino}</strong>
+      </li>`;
+    }).join("");
   } catch (err) {
-    showToast(err.message, "error");
+    console.error("[History Error]:", err);
   } finally {
-    historyLoading.classList.add("hidden");
+    if (historyLoading) historyLoading.classList.add("hidden");
   }
 }
 
-// 3. Cadastrar/Atualizar Taxa (Etapa 1)
-rateForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const currency = document.getElementById("rate-currency").value.trim().toUpperCase();
-  const rate = document.getElementById("rate-value").value;
-
-  toggleLoading("btn-save-rate", "rate-spinner", true);
-
-  try {
-    const response = await fetch(${API_BASE_URL}/taxas//, {
-      method: "POST"
-    });
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.erro || "Erro ao cadastrar a taxa.");
-    }
-
-    showToast(Taxa de  salva com sucesso!, "success");
-    rateForm.reset();
-    updateCurrencySelects(data.moeda);
-  } catch (err) {
-    showToast(err.message, "error");
-  } finally {
-    toggleLoading("btn-save-rate", "rate-spinner", false);
-  }
-});
-
-// Adicionar nova moeda cadastrada aos selects da tela
 function updateCurrencySelects(newCurrency) {
   const originSelect = document.getElementById("origin-currency");
   const destSelect = document.getElementById("destination-currency");
 
   const exists = Array.from(originSelect.options).some(opt => opt.value === newCurrency);
   if (!exists) {
-    const opt1 = new Option(${newCurrency}, newCurrency);
-    const opt2 = new Option(${newCurrency}, newCurrency);
-    originSelect.add(opt1);
-    destSelect.add(opt2);
+    originSelect.add(new Option(newCurrency, newCurrency));
+    destSelect.add(new Option(newCurrency, newCurrency));
   }
 }
 
-// Inicialização
-btnRefreshHistory.addEventListener("click", loadHistory);
+if (btnConvert) btnConvert.addEventListener("click", executeConversion);
+if (btnSaveRate) btnSaveRate.addEventListener("click", executeSaveRate);
+if (btnRefreshHistory) btnRefreshHistory.addEventListener("click", loadHistory);
 document.addEventListener("DOMContentLoaded", loadHistory);

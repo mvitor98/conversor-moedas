@@ -1,120 +1,107 @@
-﻿# 💱 Conversor de Moedas - Desafio Técnico (Fintech / MELI)
+# 💱 Conversor de Moedas - Desafio Técnico (Fintech / MELI)
 
-Aplicação Web Full-Stack para conversão de moedas em tempo real, com persistência em banco chave-valor (Redis), arquitetura em camadas (MVC + Strategy + DAO) e esteira de testes e CI/CD totalmente automatizada.
+Aplicação Web Full-Stack para conversão de moedas em tempo real, com persistência em banco de dados chave-valor (Redis), arquitetura modular em camadas (**MVC + Strategy + DAO/DTO**), Nginx Reverse Proxy e esteira de testes e CI/CD totalmente automatizada.
 
 ---
 
-## 🔗 Links Principais de Produção
+## 🔗 Links Principais em Produção
 
 * **Frontend Web (Vercel):** \https://conversor-moedas.vercel.app\ *(Aguardando Deploy)*
 * **API Backend (Render):** \https://conversor-moedas-api.onrender.com\ *(Aguardando Deploy)*
-* **Documentação Interativa Swagger (OpenAPI):** \https://conversor-moedas-api.onrender.com/docs\
-* **Repositório GitHub:** \https://github.com/mvitor98/conversor-moedas\
-
+* **Documentação Interativa Swagger (OpenAPI):** \https://conversor-moedas-api.onrender.com/docs* **Repositório GitHub:** \https://github.com/mvitor98/conversor-moedas
 ---
 
-## 🛠️ Stack Tecnológica & Arquitetura
+## 🛠️ Arquitetura e Stack Tecnológica
 
+### Architecture Blueprint (Containers & Fluxo de Dados)
+
+\\	ext
+  [ Cliente / Navegador ]
+            │
+            ▼ (Porta 3000)
+┌──────────────────────────────────────┐
+│  frontend (Nginx Alpine)             │
+│  - Serve HTML5/CSS3/JS Vanilla       │
+│  - Reverse Proxy: /api/ ──┐          │
+└───────────────────────────┼──────────┘
+                            │ (Rede Docker Interna)
+                            ▼ (Porta 8000)
+┌──────────────────────────────────────┐
+│  api (FastAPI / Uvicorn)             │
+│  - Controllers (Routers)             │
+│  - Domain Services & Strategy        │
+│  - DAOs & DTOs (Pydantic v2)         │
+└───────────────────────────┬──────────┘
+                            │ (Porta 6379)
+                            ▼
+┌──────────────────────────────────────┐
+│  redis (Redis 7 Alpine)              │
+│  - Persistência em Disco (Volume)    │
+└──────────────────────────────────────┘
+\
 ### Backend
 * **Linguagem & Framework:** Python 3.11+ com **FastAPI**.
-* **Banco de Dados:** **Redis** (Banco Chave-Valor) via **Upstash** em produção / **Docker** local.
+* **Banco de Dados:** **Redis 7** via **Upstash** (Produção) / Container Docker (Local).
 * **Padrões de Projeto Aplicados:**
-  * **MVC (Model-View-Controller):** Separação clara entre roteadores/controllers, modelos/serviços de domínio e visualização.
-  * **Strategy Pattern:** Padrão abstrato (\RateStrategy\) para consulta de taxas de câmbio, permitindo plugar bancos locais ou APIs externas dinamicamente.
-  * **DTO / DAO (Data Transfer Object / Data Access Object):** DTOs com Pydantic v2 para validação rigorosa de entrada/saída e DAOs (\RedisRateDAO\, \RedisHistoryDAO\) para abstração total do banco.
-* **Boas Práticas de Código:** Segue estritamente **PEP8**, **DRY**, **KISS**, **YAGNI** e **SOLID**.
-* **Observabilidade:** Logs estruturados centralizados via módulo \logging\.
+  * **MVC (Model-View-Controller):** Separação estrita entre roteadores (outers.py\), camada de negócios (\services.py\) e visualização/DTOs.
+  * **Strategy Pattern:** Abstração de consulta de taxas (\RateStrategy\), isolando a regra do provedor de dados (Redis ou APIs externas).
+  * **DTO / DAO:** Validação estrita via Pydantic v2 e isolamento de banco via \RedisRateDAO\ e \RedisHistoryDAO\.
+* **Boas Práticas de Código:** Segue estritamente **PEP8**, **DRY**, **KISS**, **YAGNI** e princípios **SOLID**.
 
 ### Frontend
 * **Tecnologias:** HTML5 Semântico, CSS3 Responsivo e JavaScript Vanilla (ES6+).
-* **Recursos UI:** Feedback visual com spinners de carregamento, alertas toast de erro/sucesso e atualização dinâmica de histórico e moedas.
+* **Infraestrutura:** Servidor **Nginx Alpine** atuando como Web Server e Proxy Reverso para rotas de API.
 
-### Testes & Qualidade
-* **Framework de Testes:** **Pytest** com **Fakeredis** (Mocks de banco em memória) cobrindo testes Unitários e E2E.
-* **Qualidade de Código:** **Black** (Formatação) e **Flake8** (Linter PEP8).
-* **Automação:** Hooks de **Pre-commit** e pipeline de **CI/CD no GitHub Actions** (\.github/workflows/pytest.yml\).
+### Qualidade e Testes
+* **Testes Automatizados:** **Pytest** + **Fakeredis** (Mocks em memória) cobrindo testes unitários de domínio e testes E2E de API.
+* **Linters e Formatadores:** **Black** e **Flake8**.
+* **Garantia de Qualidade:** Hooks de **Pre-commit** e pipeline de **CI/CD no GitHub Actions**.
 
 ---
 
-## 🚀 Como Executar o Projeto Localmente
+## 🚀 Execução Local (Docker Compose)
 
 ### Pré-requisitos
-* **Python 3.11+**
-* **Docker & Docker Compose** (opcional para subir o Redis localmente)
-* **Git**
+* **Docker Desktop** e **Docker Compose** instalados.
 
 ### Passo a Passo
 
 1. **Clonar o Repositório:**
-   \\\ash
+   \\ash
    git clone https://github.com/mvitor98/conversor-moedas.git
    cd conversor-moedas
-   \\\
-
-2. **Criar e Ativar o Ambiente Virtual (\env\):**
-   \\\ash
-   # Windows (PowerShell)
-   python -m venv venv
-   .\venv\Scripts\Activate.ps1
-
-   # Linux/macOS
-   python3 -m venv venv
-   source venv/bin/activate
-   \\\
-
-3. **Instalar Dependências e Configurar Hooks:**
-   \\\ash
-   pip install -r backend/requirements.txt
-   pre-commit install
-   \\\
-
-4. **Configurar Variáveis de Ambiente:**
-   Copie o arquivo \.env.example\ para \.env\:
-   \\\ash
-   cp .env.example .env
-   \\\
-
-5. **Subir a Aplicação via Docker Compose (Recomendado):**
-   Suba o banco Redis e a API em container com um único comando:
-   \\\ash
+   \
+2. **Subir os Containers (Frontend + API + Redis):**
+   \\ash
    docker compose up --build
-   \\\
-   A API estará acessível em: \http://localhost:8000\
-   A documentação Swagger estará em: \http://localhost:8000/docs\
-
-6. **Executar a API sem Docker (Modo Manual):**
-   Caso já tenha um servidor Redis rodando em \localhost:6379\:
-   \\\ash
-   uvicorn backend.main:app --reload --port 8000
-   \\\
-
-7. **Executar o Frontend:**
-   Basta abrir o arquivo \rontend/index.html\ no seu navegador de preferência.
-
+   \
+3. **Acessar os Serviços:**
+   * **Frontend Web:** \http://localhost:3000   * **API Backend (Swagger):** \http://localhost:8000/docs
 ---
 
-## 🧪 Executando os Testes Automatizados
+## 🧪 Execução de Testes Automatizados
 
-Para rodar a suíte completa de testes unitários e E2E sem necessidade de um banco Redis ativo (utilizando os mocks do \akeredis\):
+Para executar os testes unitários e E2E via ambiente virtual local:
 
-\\\ash
+\\ash
+# Ativar venv e instalar dependências
+pip install -r backend/requirements.txt
+
+# Executar suíte do Pytest
 pytest -v
-\\\
-
----
-
-## 🛡️ Segurança e Variáveis de Ambiente
-
-> ⚠️ **Regra de Ouro:** Nenhuma credencial ou senha é mantida no repositório.
-> Todas as chaves e URLs de produção (como o Redis na nuvem) são injetadas estritamente por variáveis de ambiente (\REDIS_URL\) nos painéis do Render e Upstash.
-
+\
 ---
 
 ## 📌 Guia de Endpoints da API
 
-* **\POST /taxas/{moeda}/{valor}\**: Cadastra ou atualiza uma taxa de câmbio (Base: 1 USD).
-  * *Status:* \201 Created\ (Sucesso) | \400 Bad Request\ (Valor inválido ou <= 0).
-* **\GET /converter/{valor}/{moeda_origem}/{moeda_destino}\**: Executa a conversão entre duas moedas.
-  * *Status:* \200 OK\ (Sucesso) | \400 Bad Request\ (Moeda idêntica ou valor <= 0) | \404 Not Found\ (Taxa não cadastrada).
-* **\GET /conversoes\**: Retorna o histórico das últimas 5 conversões realizadas.
-  * *Status:* \200 OK\ (Sucesso) | \404 Not Found\ (Histórico vazio).
+| Método | Endpoint | Descrição | Retorno Esperado |
+| :--- | :--- | :--- | :--- |
+| \POST\ | \/taxas/{moeda}/{valor}\ | Cadastra ou atualiza uma taxa em relação ao USD base |  Created\ |
+| \GET\ | \/converter/{valor}/{origem}/{destino}\ | Converte um valor entre duas moedas cadastradas |  OK\ |
+| \GET\ | \/conversoes\ | Retorna o histórico das últimas 5 conversões |  OK\ |
+
+---
+
+## 🛡️ Segurança
+
+Nenhuma credencial ou token privado está versionado no código. Todas as variáveis de ambiente em produção são injetadas estritamente pelos painéis do Render e Upstash.

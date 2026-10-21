@@ -1,6 +1,4 @@
-version: '3.8'
-
-services:
+﻿services:
   redis:
     image: redis:7-alpine
     container_name: redis_local
@@ -27,6 +25,16 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: conversor_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
 
 volumes:
   redis_data:
