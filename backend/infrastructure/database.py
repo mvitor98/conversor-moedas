@@ -1,19 +1,23 @@
 import os
-import redis
 
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+rest_url = os.getenv("UPSTASH_REDIS_REST_URL")
+rest_token = os.getenv("UPSTASH_REDIS_REST_TOKEN")
 
-# Configuração resiliente do Pool de Conexões para Redis na Nuvem (Upstash)
-redis_client = redis.from_url(
-    REDIS_URL,
-    decode_responses=True,
-    health_check_interval=30,
-    socket_timeout=10,
-    socket_connect_timeout=10,
-    retry_on_timeout=True,
-    socket_keepalive=True,
-)
+if rest_url and rest_token:
+    from upstash_redis import Redis
+
+    redis_client = Redis(url=rest_url, token=rest_token)
+else:
+    import redis
+
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+    redis_client = redis.from_url(
+        redis_url,
+        decode_responses=True,
+        socket_timeout=10,
+        socket_connect_timeout=10,
+    )
 
 
-def get_redis_client() -> redis.Redis:
+def get_redis_client():
     return redis_client
