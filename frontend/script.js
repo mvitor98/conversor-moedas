@@ -2,7 +2,7 @@ const isLocal = typeof window !== "undefined" && (window.location.hostname === "
 
 const API_BASE_URL = isLocal
   ? (window.location.port === "3000" ? "/api" : "http://localhost:8000")
-  : "https://conversor-moedas-api.onrender.com";
+  : "https://conversor-moedas-q2tz.onrender.com";
 
 function formatCurrencyValue(val) {
   if (typeof val !== "number") return val;
