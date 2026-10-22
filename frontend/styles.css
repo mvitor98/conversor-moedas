@@ -31,6 +31,28 @@ html {
   }
 }
 
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 9999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.badge-manual {
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+.badge-bcb {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+
 .empty-msg {
   color: #94a3b8;
   font-size: 0.9rem;

@@ -4,11 +4,32 @@ const API_BASE_URL = isLocal
   ? (window.location.port === "3000" ? "/api" : "http://localhost:8000")
   : "https://conversor-moedas-wtq2.onrender.com";
 
+let currentRateMode = "manual";
+
+const RATE_MODE_ACTIVE_CLASS = "px-4 py-2 bg-brand text-white font-semibold transition-colors";
+const RATE_MODE_INACTIVE_CLASS = "px-4 py-2 bg-white text-slate-600 font-semibold hover:bg-slate-50 transition-colors";
+const RATES_TAB_ACTIVE_CLASS = "flex-1 py-2.5 text-sm font-semibold text-brand border-b-2 border-brand";
+const RATES_TAB_INACTIVE_CLASS = "flex-1 py-2.5 text-sm font-semibold text-slate-500 border-b-2 border-transparent hover:text-slate-700";
+
 function formatCurrencyValue(val) {
   if (typeof val !== "number") return val;
   return val.toLocaleString("pt-BR", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 4
+  });
+}
+
+function formatTimestamp(isoString) {
+  if (!isoString) return "—";
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) return "—";
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
   });
 }
 
@@ -95,7 +116,31 @@ async function executeConversion() {
   }
 }
 
+function setRateMode(mode) {
+  currentRateMode = mode;
+  const manualBtn = document.getElementById("btn-rate-mode-manual");
+  const bcbBtn = document.getElementById("btn-rate-mode-bcb");
+  const valueGroup = document.getElementById("rate-value-group");
+  const valueInput = document.getElementById("rate-value");
+  const hint = document.getElementById("rate-mode-hint");
+  const isManual = mode === "manual";
+
+  if (manualBtn) manualBtn.className = isManual ? RATE_MODE_ACTIVE_CLASS : RATE_MODE_INACTIVE_CLASS;
+  if (bcbBtn) bcbBtn.className = !isManual ? RATE_MODE_ACTIVE_CLASS : RATE_MODE_INACTIVE_CLASS;
+  if (valueGroup) valueGroup.classList.toggle("hidden", !isManual);
+  if (valueInput) valueInput.required = isManual;
+  if (hint) {
+    hint.textContent = isManual
+      ? "Quanto vale 1 USD na moeda informada."
+      : "Busca a cotação oficial do PTAX para a moeda (não cobre ARS).";
+  }
+}
+
 async function executeSaveRate() {
+  if (currentRateMode === "bcb") {
+    return fetchRateFromBcb();
+  }
+
   const currencyInput = document.getElementById("rate-currency");
   const rateInput = document.getElementById("rate-value");
 
@@ -122,8 +167,41 @@ async function executeSaveRate() {
     if (currencyInput) currencyInput.value = "";
     if (rateInput) rateInput.value = "";
     updateCurrencySelects(data.moeda);
+    await loadRegisteredRates();
   } catch (err) {
     console.error("[Rate Error]:", err);
+    showToast(err.message, "error");
+  } finally {
+    toggleLoading("btn-save-rate", "rate-spinner", false);
+  }
+}
+
+async function fetchRateFromBcb() {
+  const currencyInput = document.getElementById("rate-currency");
+  const currency = currencyInput ? currencyInput.value.trim().toUpperCase() : "";
+
+  if (!currency) {
+    showToast("Informe a moeda para buscar no BCB.", "error");
+    return;
+  }
+
+  toggleLoading("btn-save-rate", "rate-spinner", true);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/taxas/sincronizar-bcb?moeda=${currency}`, { method: "POST" });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.erro || "Erro ao buscar a taxa no BCB.");
+    }
+
+    const taxa = data.taxas ? data.taxas[currency] : undefined;
+    showToast(`Taxa de ${currency} atualizada via BCB: ${formatCurrencyValue(taxa)}`, "success");
+    if (currencyInput) currencyInput.value = "";
+    updateCurrencySelects(currency);
+    await loadRegisteredRates();
+  } catch (err) {
+    console.error("[BCB Rate Error]:", err);
     showToast(err.message, "error");
   } finally {
     toggleLoading("btn-save-rate", "rate-spinner", false);
@@ -157,6 +235,7 @@ async function syncBcbRates() {
       resultBox.classList.remove("hidden");
     }
     showToast("Taxas sincronizadas com o BCB/PTAX!", "success");
+    await loadRegisteredRates();
   } catch (err) {
     console.error("[BCB Sync Error]:", err);
     showToast(err.message, "error");
@@ -165,6 +244,113 @@ async function syncBcbRates() {
     if (spinner) spinner.classList.add("hidden");
     if (label) label.textContent = "Sincronizar agora";
   }
+}
+
+function renderRateRecord(item) {
+  const badgeClass = item.fonte === "bcb" ? "badge badge-bcb" : "badge badge-manual";
+  return `<li class="py-2.5 flex items-center justify-between gap-2">
+    <div class="min-w-0">
+      <div class="flex items-center gap-1.5">
+        <span class="font-semibold text-slate-800">${item.moeda}</span>
+        <span class="${badgeClass}">${item.fonte}</span>
+      </div>
+      <div class="text-xs text-slate-400 tabular-nums">${formatTimestamp(item.atualizado_em)}</div>
+    </div>
+    <span class="font-semibold text-slate-700 tabular-nums">${formatCurrencyValue(item.taxa)}</span>
+  </li>`;
+}
+
+async function loadRegisteredRates() {
+  const list = document.getElementById("rates-current-list");
+  const globalTimestamp = document.getElementById("last-updated-global");
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/taxas`);
+    const data = await response.json();
+
+    if (response.status === 404) {
+      if (list) list.innerHTML = '<li class="empty-msg">Nenhuma taxa cadastrada ainda.</li>';
+      if (globalTimestamp) globalTimestamp.textContent = "";
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error("Erro ao carregar as taxas cadastradas.");
+    }
+
+    if (list) list.innerHTML = data.map(renderRateRecord).join("");
+
+    if (globalTimestamp && data.length) {
+      const maisRecente = data.reduce((acc, item) => {
+        if (!item.atualizado_em) return acc;
+        return !acc || item.atualizado_em > acc ? item.atualizado_em : acc;
+      }, null);
+      globalTimestamp.textContent = maisRecente
+        ? `Última atualização: ${formatTimestamp(maisRecente)}`
+        : "";
+    }
+  } catch (err) {
+    console.error("[Rates Error]:", err);
+  }
+}
+
+async function loadRateHistory() {
+  const list = document.getElementById("rates-history-list");
+  if (!list) return;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/taxas/historico`);
+    const data = await response.json();
+
+    if (response.status === 404) {
+      list.innerHTML = '<li class="empty-msg">Nenhuma mudança nos últimos 7 dias.</li>';
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error("Erro ao carregar o histórico de taxas.");
+    }
+
+    list.innerHTML = data.map(renderRateRecord).join("");
+  } catch (err) {
+    console.error("[Rate History Error]:", err);
+  }
+}
+
+function openRatesPanel() {
+  const panel = document.getElementById("rates-panel");
+  const backdrop = document.getElementById("rates-panel-backdrop");
+  if (panel) {
+    panel.classList.remove("translate-x-full");
+    panel.setAttribute("aria-hidden", "false");
+  }
+  if (backdrop) backdrop.classList.remove("hidden");
+  loadRegisteredRates();
+}
+
+function closeRatesPanel() {
+  const panel = document.getElementById("rates-panel");
+  const backdrop = document.getElementById("rates-panel-backdrop");
+  if (panel) {
+    panel.classList.add("translate-x-full");
+    panel.setAttribute("aria-hidden", "true");
+  }
+  if (backdrop) backdrop.classList.add("hidden");
+}
+
+function switchRatesTab(tab) {
+  const currentList = document.getElementById("rates-current-list");
+  const historyList = document.getElementById("rates-history-list");
+  const currentTabBtn = document.getElementById("tab-rates-current");
+  const historyTabBtn = document.getElementById("tab-rates-history");
+  const isCurrent = tab === "current";
+
+  if (currentList) currentList.classList.toggle("hidden", !isCurrent);
+  if (historyList) historyList.classList.toggle("hidden", isCurrent);
+  if (currentTabBtn) currentTabBtn.className = isCurrent ? RATES_TAB_ACTIVE_CLASS : RATES_TAB_INACTIVE_CLASS;
+  if (historyTabBtn) historyTabBtn.className = !isCurrent ? RATES_TAB_ACTIVE_CLASS : RATES_TAB_INACTIVE_CLASS;
+
+  if (!isCurrent) loadRateHistory();
 }
 
 async function loadHistory() {
@@ -220,13 +406,33 @@ if (typeof window !== "undefined") {
     const btnRefreshHistory = document.getElementById("btn-refresh-history");
     const btnSwapCurrency = document.getElementById("btn-swap-currency");
     const btnSyncBcb = document.getElementById("btn-sync-bcb");
+    const btnRateModeManual = document.getElementById("btn-rate-mode-manual");
+    const btnRateModeBcb = document.getElementById("btn-rate-mode-bcb");
+    const btnOpenRatesPanel = document.getElementById("btn-open-rates-panel");
+    const btnCloseRatesPanel = document.getElementById("btn-close-rates-panel");
+    const ratesPanelBackdrop = document.getElementById("rates-panel-backdrop");
+    const tabRatesCurrent = document.getElementById("tab-rates-current");
+    const tabRatesHistory = document.getElementById("tab-rates-history");
 
     if (btnConvert) btnConvert.addEventListener("click", executeConversion);
     if (btnSaveRate) btnSaveRate.addEventListener("click", executeSaveRate);
     if (btnRefreshHistory) btnRefreshHistory.addEventListener("click", loadHistory);
     if (btnSwapCurrency) btnSwapCurrency.addEventListener("click", swapCurrencies);
     if (btnSyncBcb) btnSyncBcb.addEventListener("click", syncBcbRates);
+    if (btnRateModeManual) btnRateModeManual.addEventListener("click", () => setRateMode("manual"));
+    if (btnRateModeBcb) btnRateModeBcb.addEventListener("click", () => setRateMode("bcb"));
+    if (btnOpenRatesPanel) btnOpenRatesPanel.addEventListener("click", openRatesPanel);
+    if (btnCloseRatesPanel) btnCloseRatesPanel.addEventListener("click", closeRatesPanel);
+    if (ratesPanelBackdrop) ratesPanelBackdrop.addEventListener("click", closeRatesPanel);
+    if (tabRatesCurrent) tabRatesCurrent.addEventListener("click", () => switchRatesTab("current"));
+    if (tabRatesHistory) tabRatesHistory.addEventListener("click", () => switchRatesTab("history"));
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeRatesPanel();
+    });
+
     loadHistory();
+    loadRegisteredRates();
   });
 }
 
@@ -236,10 +442,18 @@ if (typeof module !== "undefined" && module.exports) {
     toggleLoading,
     executeConversion,
     executeSaveRate,
+    fetchRateFromBcb,
+    setRateMode,
     loadHistory,
     updateCurrencySelects,
     swapCurrencies,
     syncBcbRates,
+    loadRegisteredRates,
+    loadRateHistory,
+    openRatesPanel,
+    closeRatesPanel,
+    switchRatesTab,
+    formatTimestamp,
     formatCurrencyValue,
     API_BASE_URL
   };

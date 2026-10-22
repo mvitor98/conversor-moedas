@@ -3,6 +3,7 @@
 from fastapi import Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from backend.api.rate_limiter import RateLimitExceededError
 from backend.core.logger import logger
 
 
@@ -43,6 +44,26 @@ async def validation_error_handler(
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content={"erro": "Parâmetros inválidos."},
+    )
+
+
+async def rate_limit_handler(
+    request: Request, exc: RateLimitExceededError
+) -> JSONResponse:
+    """Mapeia o limite de requisições excedido para 429 Too Many Requests.
+
+    Args:
+        request (Request): Instância da requisição HTTP.
+        exc (RateLimitExceededError): Exceção capturada.
+
+    Returns:
+        JSONResponse: Resposta com status 429, payload JSON e header Retry-After.
+    """
+    logger.warning(f"Rate limit excedido em {request.url.path}")
+    return JSONResponse(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        content={"erro": "Muitas requisições. Tente novamente em instantes."},
+        headers={"Retry-After": str(exc.retry_after_seconds)},
     )
 
 

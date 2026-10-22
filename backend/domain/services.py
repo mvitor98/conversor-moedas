@@ -21,7 +21,14 @@ class CurrencyService:
         if valor <= 0:
             raise ValueError("O valor da taxa deve ser maior que zero.")
         valor_arredondado = round(valor, 4)
-        return self.rate_dao.save_rate(moeda, valor_arredondado, fonte)
+
+        taxa_anterior = self.rate_dao.get_rate_details(moeda)
+        resultado = self.rate_dao.save_rate(moeda, valor_arredondado, fonte)
+
+        if taxa_anterior is None or taxa_anterior["taxa"] != valor_arredondado:
+            self.rate_dao.add_rate_history_entry(moeda, valor_arredondado, fonte)
+
+        return resultado
 
     def convert(self, valor: float, origem: str, destino: str) -> dict:
         origem = origem.upper()
@@ -65,6 +72,19 @@ class CurrencyService:
 
         if not historico:
             raise KeyError("Nenhuma conversão registrada.")
+        return historico
+
+    def get_all_rates(self) -> list:
+        taxas = self.rate_dao.get_all_rates()
+        if not taxas:
+            raise KeyError("Nenhuma taxa cadastrada.")
+        taxas.sort(key=lambda t: t.get("atualizado_em") or "", reverse=True)
+        return taxas
+
+    def get_rate_history(self) -> list:
+        historico = self.rate_dao.get_rate_history()
+        if not historico:
+            raise KeyError("Nenhuma mudança de taxa registrada nos últimos dias.")
         return historico
 
 

@@ -12,6 +12,13 @@ PTAX_BASE_URL = (
 PTAX_CLOSING_BULLETIN = "Fechamento PTAX"
 REQUEST_TIMEOUT_SECONDS = 5.0
 
+# Moedas estrangeiras cotadas pelo PTAX (consulta "quantos BRL vale 1 unidade
+# da moeda"). BRL não é uma moeda "estrangeira" consultável por este endpoint
+# (a cotação de USD já devolve BRL/USD diretamente).
+PTAX_SUPPORTED_CURRENCIES = frozenset(
+    {"AUD", "CAD", "CHF", "DKK", "EUR", "GBP", "JPY", "NOK", "SEK", "USD"}
+)
+
 
 def _fetch_quotes_for_date(moeda: str, dia: date) -> List[dict]:
     """Consulta as cotações PTAX publicadas pelo BCB em um dia específico."""

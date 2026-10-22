@@ -23,6 +23,11 @@ class RateResponseDTO(BaseModel):
         description="Origem da taxa: 'manual' (cadastrada via API) ou 'bcb' (PTAX).",
         json_schema_extra={"example": "manual"},
     )
+    atualizado_em: str = Field(
+        ...,
+        description="Data/hora (UTC, precisão de segundo) do registro.",
+        json_schema_extra={"example": "2026-10-22T02:30:15+00:00"},
+    )
 
 
 class ConversionResponseDTO(BaseModel):
@@ -47,6 +52,27 @@ class ConversionResponseDTO(BaseModel):
         ...,
         description="Valor retornado.",
         json_schema_extra={"example": 14000.0},
+    )
+
+
+class RateRecordDTO(BaseModel):
+    """DTO de resposta para uma taxa cadastrada ou uma entrada de histórico."""
+
+    moeda: str = Field(..., description="Moeda.", json_schema_extra={"example": "EUR"})
+    taxa: float = Field(
+        ...,
+        description="Valor da taxa em relação a 1 USD.",
+        json_schema_extra={"example": 0.92},
+    )
+    fonte: str = Field(
+        ...,
+        description="Origem da taxa: 'manual' ou 'bcb' (PTAX).",
+        json_schema_extra={"example": "bcb"},
+    )
+    atualizado_em: str = Field(
+        ...,
+        description="Data/hora (UTC, precisão de segundo) do registro.",
+        json_schema_extra={"example": "2026-10-22T02:30:15+00:00"},
     )
 
 

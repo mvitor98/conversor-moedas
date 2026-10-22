@@ -6,7 +6,7 @@ Aplicação Web Full-Stack para conversão de moedas em tempo real, com persist�
 
 ## 🔗 Links Principais em Produção
 
-* **Frontend Web (Vercel):** `https://conversor-moedas.vercel.app`
+* **Frontend Web (Vercel):** `https://conversor-moedas-woad.vercel.app`
 * **API Backend (Render):** `https://conversor-moedas-wtq2.onrender.com`
 * **Documentação Interativa Swagger (OpenAPI):** `https://conversor-moedas-wtq2.onrender.com/docs`
 * **Repositório GitHub:** `https://github.com/mvitor98/conversor-moedas`
@@ -71,6 +71,16 @@ Cada taxa cadastrada carrega uma tag de proveniência (`fonte`), persistida junt
 * **`manual`** — cadastrada via `POST /taxas/{moeda}/{valor}`, ou usada como valor de referência inicial para moedas que o PTAX não cobre (ex: **ARS**, peso argentino — o Banco Central não publica cotação oficial para essa moeda). Pode ser atualizada a qualquer momento pelo mesmo endpoint.
 
 Falhas ao consultar o BCB (API fora do ar, sem cotação no período) nunca derrubam a aplicação: ficam registradas em log e a API continua funcionando com as taxas já existentes.
+
+No cadastro de taxa (`POST /taxas/{moeda}/{valor}`), o frontend oferece um seletor **Manual / Buscar no BCB**: em modo BCB, basta informar a moeda e o valor é obtido automaticamente via `POST /taxas/sincronizar-bcb?moeda={moeda}` (qualquer moeda coberta pelo PTAX: AUD, CAD, CHF, DKK, EUR, GBP, JPY, NOK, SEK, USD, além do BRL calculado via taxa cruzada).
+
+### Painel de taxas cadastradas e histórico de 7 dias
+
+O botão **"Taxas"** no cabeçalho abre um painel lateral com duas abas:
+* **Cadastradas** — todas as taxas atualmente em vigor (`GET /taxas`), com moeda, valor, fonte e timestamp de atualização (precisão de segundo).
+* **Histórico (7 dias)** — mudanças de valor registradas nos últimos 7 dias (`GET /taxas/historico`), feed combinado de todas as moedas. Uma entrada só é criada quando o valor realmente muda — re-sincronizações do BCB com o mesmo valor (comuns a cada restart do servidor) não geram ruído no histórico.
+
+O cabeçalho da página também mostra a "Última atualização" global (a mais recente entre todas as moedas), derivada da mesma chamada a `GET /taxas`.
 
 ---
 

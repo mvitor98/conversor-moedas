@@ -7,9 +7,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from backend.api.exceptions import (
     key_error_handler,
+    rate_limit_handler,
     validation_error_handler,
     value_error_handler,
 )
+from backend.api.rate_limiter import RateLimitExceededError
 from backend.api.routers import router
 from backend.core.logger import logger
 from backend.domain.rate_sync_service import RateSyncService
@@ -61,6 +63,7 @@ app.add_middleware(
 app.add_exception_handler(ValueError, value_error_handler)
 app.add_exception_handler(KeyError, key_error_handler)
 app.add_exception_handler(RequestValidationError, validation_error_handler)
+app.add_exception_handler(RateLimitExceededError, rate_limit_handler)
 
 # Registrar rotas da API
 app.include_router(router)

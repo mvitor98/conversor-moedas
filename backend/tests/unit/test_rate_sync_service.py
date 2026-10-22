@@ -1,6 +1,7 @@
 """Testes unitários para o RateSyncService (sincronização com o BCB/PTAX)."""
 
 from unittest.mock import MagicMock, patch
+import pytest
 from backend.domain.rate_sync_service import RateSyncService
 from backend.domain.services import CurrencyService
 
@@ -27,6 +28,40 @@ def test_sync_from_bcb_saves_brl_and_usd_with_bcb_source() -> None:
 
     mock_fetch.assert_called_once_with("USD")
     assert resultado == {"BRL": 5.0134, "USD": 1.0}
+
+
+def test_sync_currency_from_bcb_uses_cross_rate_via_brl() -> None:
+    """Para moedas que não são BRL/USD, calcula a taxa cruzada via BRL."""
+    sync_service, _ = _build_sync_service()
+
+    def fake_fetch(moeda):
+        return {"USD": 5.0, "EUR": 6.0}[moeda]
+
+    with patch(
+        "backend.domain.rate_sync_service.fetch_ptax_rate", side_effect=fake_fetch
+    ):
+        resultado = sync_service.sync_currency_from_bcb("EUR")
+
+    assert resultado == {"EUR": round(5.0 / 6.0, 4)}
+
+
+def test_sync_currency_from_bcb_usd_is_always_one() -> None:
+    """USD é a moeda-base: deve sempre gravar 1.0 sem chamar o BCB."""
+    sync_service, _ = _build_sync_service()
+
+    with patch("backend.domain.rate_sync_service.fetch_ptax_rate") as mock_fetch:
+        resultado = sync_service.sync_currency_from_bcb("usd")
+
+    mock_fetch.assert_not_called()
+    assert resultado == {"USD": 1.0}
+
+
+def test_sync_currency_from_bcb_raises_for_unsupported_currency() -> None:
+    """Moeda fora da cobertura do PTAX deve levantar ValueError (-> 400)."""
+    sync_service, _ = _build_sync_service()
+
+    with pytest.raises(ValueError, match="ARS"):
+        sync_service.sync_currency_from_bcb("ARS")
 
 
 def test_ensure_preloaded_rates_seeds_ars_fallback_when_missing() -> None:
