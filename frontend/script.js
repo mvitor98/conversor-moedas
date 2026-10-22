@@ -279,6 +279,7 @@ async function loadRegisteredRates() {
     }
 
     if (list) list.innerHTML = data.map(renderRateRecord).join("");
+    data.forEach(item => updateCurrencySelects(item.moeda));
 
     if (globalTimestamp && data.length) {
       const maisRecente = data.reduce((acc, item) => {

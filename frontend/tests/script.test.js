@@ -214,6 +214,24 @@ describe("Frontend - Painel de taxas cadastradas", () => {
     expect(document.getElementById("last-updated-global").textContent).toContain("Última atualização");
   });
 
+  test("loadRegisteredRates sincroniza os selects com moedas já cadastradas no banco", async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ([
+        { moeda: "BRL", taxa: 5.0, fonte: "bcb", atualizado_em: "2026-10-22T02:00:00+00:00" },
+        { moeda: "EUR", taxa: 0.92, fonte: "bcb", atualizado_em: "2026-10-22T02:00:00+00:00" }
+      ])
+    });
+
+    await loadRegisteredRates();
+
+    const originOptions = Array.from(document.getElementById("origin-currency").options).map(o => o.value);
+    const destOptions = Array.from(document.getElementById("destination-currency").options).map(o => o.value);
+    expect(originOptions).toContain("EUR");
+    expect(destOptions).toContain("EUR");
+  });
+
   test("loadRegisteredRates mostra estado vazio quando não há taxas (404)", async () => {
     global.fetch.mockResolvedValueOnce(emptyJsonResponse());
 
