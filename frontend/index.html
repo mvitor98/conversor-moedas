@@ -20,6 +20,7 @@
     .ccy:focus{outline:none;box-shadow:0 0 0 3px rgba(10,10,10,.1)}
     .amount{width:100%;background:transparent;border:0;outline:0;font-family:"JetBrains Mono",monospace;font-size:34px;font-weight:500;letter-spacing:-.02em;color:#0a0a0a;min-width:0}
     .amount::placeholder{color:#b4bcc8}
+    @media (max-width:479px){.amount{font-size:24px}}
     #convert-result:not(.hidden)~#result-placeholder{display:none}
     .history-item{font-family:"JetBrains Mono",monospace;font-size:13px;padding:14px 0;align-items:baseline}
     .history-item span{color:#52525b}.history-item strong{color:#0a0a0a;font-weight:600}
@@ -51,11 +52,11 @@
       <form id="convert-form" onsubmit="return false;" class="flex flex-col gap-0 flex-1">
         <div class="rounded-2xl bg-tint p-5">
           <div class="font-mono text-[11px] font-medium uppercase tracking-[.14em] text-zinc-500">Valor</div>
-          <div class="flex items-center gap-3 mt-3">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-3 mt-3">
             <label for="amount" class="sr-only">Valor</label>
             <input type="number" id="amount" step="any" min="0.01" placeholder="0,00" required class="amount">
             <label for="origin-currency" class="sr-only">De</label>
-            <select id="origin-currency" required class="ccy shrink-0">
+            <select id="origin-currency" required class="ccy shrink-0 w-full sm:w-auto">
               <option value="BRL" selected>BRL — Real</option>
               <option value="USD">USD — Dólar</option>
               <option value="ARS">ARS — Peso Arg.</option>
@@ -69,15 +70,15 @@
 
         <div class="rounded-2xl bg-mint/60 p-5 mb-5">
           <div class="font-mono text-[11px] font-medium uppercase tracking-[.14em] text-zinc-500">Valor Convertido</div>
-          <div class="flex items-center gap-3 mt-3">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-3 mt-3">
             <div class="flex-1 min-w-0">
               <div id="convert-result" class="hidden">
-                <h3 id="result-value" class="font-mono text-[34px] leading-tight font-medium tracking-tight text-gain break-words">0,00</h3>
+                <h3 id="result-value" class="font-mono text-2xl sm:text-[34px] leading-tight font-medium tracking-tight text-gain break-words">0,00</h3>
               </div>
-              <div id="result-placeholder" class="font-mono text-[34px] leading-tight font-medium tracking-tight text-zinc-300">0,00</div>
+              <div id="result-placeholder" class="font-mono text-2xl sm:text-[34px] leading-tight font-medium tracking-tight text-zinc-300">0,00</div>
             </div>
             <label for="destination-currency" class="sr-only">Para</label>
-            <select id="destination-currency" required class="ccy shrink-0">
+            <select id="destination-currency" required class="ccy shrink-0 w-full sm:w-auto">
               <option value="ARS" selected>ARS — Peso Arg.</option>
               <option value="USD">USD — Dólar</option>
               <option value="BRL">BRL — Real</option>
