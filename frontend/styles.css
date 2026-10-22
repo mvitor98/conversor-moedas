@@ -10,6 +10,52 @@ html {
   display: none !important;
 }
 
+/* A classe .hidden acima usa !important para garantir que toggles via JS
+   (classList.add/remove("hidden")) sempre vençam. Isso, porém, quebra o padrão
+   `hidden md:flex` do Tailwind (ambas as regras têm a mesma especificidade: uma
+   classe só; a responsiva nunca ganharia de uma !important). Para elementos que
+   só precisam aparecer/sumir por breakpoint (nunca via JS), usamos estas classes
+   próprias em vez de `hidden <bp>:*`. */
+.reveal-md {
+  display: none;
+}
+
+.reveal-sm {
+  display: none;
+}
+
+.reveal-xl {
+  display: none;
+}
+
+.reveal-2xl {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .reveal-sm {
+    display: inline;
+  }
+}
+
+@media (min-width: 768px) {
+  .reveal-md {
+    display: flex;
+  }
+}
+
+@media (min-width: 1280px) {
+  .reveal-xl {
+    display: block;
+  }
+}
+
+@media (min-width: 1536px) {
+  .reveal-2xl {
+    display: block;
+  }
+}
+
 .history-item {
   padding: 10px 0;
   display: flex;
@@ -44,8 +90,8 @@ html {
 }
 
 .badge-manual {
-  background-color: #f1f5f9;
-  color: #475569;
+  background-color: #f4f4f5;
+  color: #52525b;
 }
 
 .badge-bcb {
@@ -69,6 +115,7 @@ html {
   margin-left: auto;
   padding: 12px 20px;
   border-radius: 8px;
+  border: 1px solid rgba(0,0,0,.08);
   font-size: 0.9rem;
   font-weight: 500;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -95,7 +142,7 @@ html {
 .spinner {
   border: 3px solid rgba(0, 0, 0, 0.1);
   border-radius: 50%;
-  border-top: 3px solid #3182ce;
+  border-top: 3px solid #18181b;
   width: 18px;
   height: 18px;
   animation: spin 0.8s linear infinite;
@@ -105,6 +152,11 @@ html {
 #btn-save-rate .spinner {
   border-color: rgba(255, 255, 255, 0.3);
   border-top-color: #ffffff;
+}
+
+#btn-sync-bcb .spinner {
+  border-color: rgba(0, 0, 0, 0.12);
+  border-top-color: #18181b;
 }
 
 @keyframes spin {

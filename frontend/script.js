@@ -6,10 +6,10 @@ const API_BASE_URL = isLocal
 
 let currentRateMode = "manual";
 
-const RATE_MODE_ACTIVE_CLASS = "px-4 py-2 bg-brand text-white font-semibold transition-colors";
-const RATE_MODE_INACTIVE_CLASS = "px-4 py-2 bg-white text-slate-600 font-semibold hover:bg-slate-50 transition-colors";
-const RATES_TAB_ACTIVE_CLASS = "flex-1 py-2.5 text-sm font-semibold text-brand border-b-2 border-brand";
-const RATES_TAB_INACTIVE_CLASS = "flex-1 py-2.5 text-sm font-semibold text-slate-500 border-b-2 border-transparent hover:text-slate-700";
+const RATE_MODE_ACTIVE_CLASS = "px-4 py-2 rounded-lg bg-zinc-950 text-white font-medium text-sm transition-colors";
+const RATE_MODE_INACTIVE_CLASS = "px-4 py-2 rounded-lg text-zinc-600 hover:text-zinc-950 font-medium text-sm transition-colors";
+const RATES_TAB_ACTIVE_CLASS = "flex-1 py-3 text-sm font-medium text-zinc-900 border-b-2 border-zinc-900";
+const RATES_TAB_INACTIVE_CLASS = "flex-1 py-3 text-sm font-medium text-zinc-500 border-b-2 border-transparent hover:text-zinc-700";
 
 function formatCurrencyValue(val) {
   if (typeof val !== "number") return val;

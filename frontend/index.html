@@ -5,194 +5,176 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Conversor de Moedas - Fintech</title>
   <link rel="icon" href="data:,">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script id="tailwind-config">
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: { sans: ["Inter", "sans-serif"] },
-          colors: {
-            brand: { DEFAULT: "#3182ce", dark: "#2b6cb0" },
-            accent: { DEFAULT: "#38a169", dark: "#2f855a" }
-          }
-        }
-      }
-    };
+    tailwind.config = { theme: { extend: { fontFamily: { sans: ["Instrument Sans", "system-ui", "sans-serif"], mono: ["JetBrains Mono", "monospace"] }, colors: { tint: "#eaf1fb", mint: "#d8f4e6", gain: "#0b7a4b" } } } };
   </script>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    body{background:#f5f7fa}
+    .field{display:flex;width:100%;height:44px;border:1px solid #e4e7ec;border-radius:12px;background:#fff;padding:0 .85rem;font-size:14px;transition:box-shadow .15s,border-color .15s}
+    .field::placeholder{color:#a1a8b3}
+    .field:focus{outline:none;border-color:#0a0a0a;box-shadow:0 0 0 3px rgba(10,10,10,.08)}
+    .ccy{height:42px;border-radius:12px;background:#fff;border:1px solid #dfe5ee;padding:0 .75rem;font-weight:600;font-size:14px;cursor:pointer}
+    .ccy:focus{outline:none;box-shadow:0 0 0 3px rgba(10,10,10,.1)}
+    .amount{width:100%;background:transparent;border:0;outline:0;font-family:"JetBrains Mono",monospace;font-size:34px;font-weight:500;letter-spacing:-.02em;color:#0a0a0a;min-width:0}
+    .amount::placeholder{color:#b4bcc8}
+    #convert-result:not(.hidden)~#result-placeholder{display:none}
+    .history-item{font-family:"JetBrains Mono",monospace;font-size:13px;padding:14px 0;align-items:baseline}
+    .history-item span{color:#52525b}.history-item strong{color:#0a0a0a;font-weight:600}
+    #btn-sync-bcb .spinner{width:14px;height:14px;border-width:2px}
+  </style>
 </head>
-<body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen pb-20 md:pb-10">
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
-    <div class="max-w-5xl mx-auto px-4 py-4 flex items-start justify-between gap-3">
-      <div class="min-w-0">
-        <h1 class="text-xl font-bold text-slate-900">💱 Conversor de Moedas</h1>
-        <p class="text-sm text-slate-500">Taxas atualizadas automaticamente via Banco Central (PTAX)</p>
-        <p id="last-updated-global" class="text-xs text-slate-400 mt-0.5 tabular-nums"></p>
-      </div>
-      <button type="button" id="btn-open-rates-panel"
-        class="shrink-0 flex items-center gap-1.5 text-sm font-semibold text-brand hover:text-brand-dark bg-brand/10 hover:bg-brand/20 px-3 py-2 rounded-lg transition-colors">
-        <span aria-hidden="true">📊</span><span>Taxas</span>
-      </button>
-    </div>
-  </header>
-
-  <main class="max-w-5xl mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-    <!-- Conversor -->
-    <section id="section-conversor" class="min-w-0 bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col gap-4">
-      <h2 class="text-lg font-semibold text-slate-800">Converter valor</h2>
-      <form id="convert-form" onsubmit="return false;" class="flex flex-col gap-3">
-        <div>
-          <label for="amount" class="block text-xs font-semibold text-slate-500 mb-1">Valor</label>
-          <input type="number" id="amount" step="any" min="0.01" placeholder="Ex: 100.00" required
-            class="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand">
+<body class="text-zinc-950 font-sans antialiased min-h-screen pb-24 md:pb-12">
+  <div class="max-w-7xl mx-auto px-4 pt-4">
+    <header class="min-w-0 rounded-2xl bg-white shadow-[0_1px_2px_rgba(10,10,10,.04),0_8px_28px_-14px_rgba(10,10,10,.14)] px-4 py-3 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-6 min-w-0">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="shrink-0 w-9 h-9 rounded-xl bg-zinc-950 text-white flex items-center justify-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 4l4 4-4 4M21 8H7M7 20l-4-4 4-4M3 16h14"/></svg></div>
+          <h1 class="text-lg font-semibold tracking-tight truncate">Conversor de Moedas</h1>
         </div>
+        <nav class="reveal-md items-center gap-1 rounded-xl bg-tint p-1 text-sm font-medium">
+          <a href="#section-conversor" class="px-4 py-2 rounded-lg bg-zinc-950 text-white">Conversor</a>
+          <a href="#section-historico" class="px-4 py-2 rounded-lg text-zinc-600 hover:text-zinc-950">Histórico</a>
+          <a href="#section-bcb" class="px-4 py-2 rounded-lg text-zinc-600 hover:text-zinc-950">BCB</a>
+          <a href="#section-cadastro" class="px-4 py-2 rounded-lg text-zinc-600 hover:text-zinc-950">Cadastro</a>
+        </nav>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <p id="last-updated-global" class="reveal-2xl font-mono text-[11px] font-medium uppercase tracking-[.14em] text-zinc-500 !text-[10px] text-right max-w-[220px] leading-snug"></p>
+        <button type="button" id="btn-sync-bcb" title="BRL e USD são atualizados ao iniciar via PTAX. ARS usa valor manual." class="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-white border border-zinc-200 text-sm font-medium text-zinc-900 hover:bg-zinc-50 transition-colors disabled:opacity-50 disabled:cursor-wait">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg><span id="sync-bcb-label" class="reveal-sm">Sincronizar agora</span><div class="spinner hidden" id="sync-bcb-spinner"></div>
+        </button>
+        <button type="button" id="btn-open-rates-panel" class="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-zinc-950 text-sm font-semibold text-white hover:bg-zinc-800 transition-colors disabled:opacity-60 disabled:cursor-wait !h-10"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg><span>Taxas</span></button>
+      </div>
+    </header>
+  </div>
 
-        <div class="flex flex-col sm:flex-row sm:items-end gap-2">
-          <div class="min-w-0 sm:flex-1">
-            <label for="origin-currency" class="block text-xs font-semibold text-slate-500 mb-1">De</label>
-            <select id="origin-currency" required
-              class="w-full border border-slate-300 rounded-lg px-3 py-2.5 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-brand/40">
+  <main class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+    <section id="section-conversor" class="min-w-0 rounded-2xl bg-white shadow-[0_1px_2px_rgba(10,10,10,.04),0_8px_28px_-14px_rgba(10,10,10,.14)] lg:col-span-7 p-6 sm:p-8 flex flex-col gap-6">
+      <div>
+        <span class="font-mono text-[11px] font-medium uppercase tracking-[.14em] text-zinc-500 !text-gain">Conversor</span>
+        <h2 class="text-3xl font-semibold tracking-tight mt-1">Converter valor</h2>
+      </div>
+      <form id="convert-form" onsubmit="return false;" class="flex flex-col gap-0 flex-1">
+        <div class="rounded-2xl bg-tint p-5">
+          <div class="font-mono text-[11px] font-medium uppercase tracking-[.14em] text-zinc-500">Você envia</div>
+          <div class="flex items-center gap-3 mt-3">
+            <label for="amount" class="sr-only">Valor</label>
+            <input type="number" id="amount" step="any" min="0.01" placeholder="0,00" required class="amount">
+            <label for="origin-currency" class="sr-only">De</label>
+            <select id="origin-currency" required class="ccy shrink-0">
               <option value="BRL" selected>BRL — Real</option>
               <option value="USD">USD — Dólar</option>
               <option value="ARS">ARS — Peso Arg.</option>
             </select>
           </div>
+        </div>
 
-          <button type="button" id="btn-swap-currency" aria-label="Inverter moedas" title="Inverter moedas"
-            class="shrink-0 w-10 h-10 mx-auto sm:mx-0 rounded-full border border-slate-300 bg-white hover:bg-slate-100 flex items-center justify-center text-slate-600 transition-transform active:rotate-180">
-            ⇄
-          </button>
+        <div class="flex justify-center -my-5 relative z-10">
+          <button type="button" id="btn-swap-currency" aria-label="Inverter moedas" title="Inverter moedas" class="w-11 h-11 rounded-xl bg-zinc-950 text-white border-4 border-white flex items-center justify-center hover:bg-zinc-800 transition-transform active:rotate-180"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3"/></svg></button>
+        </div>
 
-          <div class="min-w-0 sm:flex-1">
-            <label for="destination-currency" class="block text-xs font-semibold text-slate-500 mb-1">Para</label>
-            <select id="destination-currency" required
-              class="w-full border border-slate-300 rounded-lg px-3 py-2.5 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-brand/40">
+        <div class="rounded-2xl bg-mint/60 p-5 mb-5">
+          <div class="font-mono text-[11px] font-medium uppercase tracking-[.14em] text-zinc-500">Você recebe</div>
+          <div class="flex items-center gap-3 mt-3">
+            <div class="flex-1 min-w-0">
+              <div id="convert-result" class="hidden">
+                <h3 id="result-value" class="font-mono text-[34px] leading-tight font-medium tracking-tight text-gain break-words">0,00</h3>
+              </div>
+              <div id="result-placeholder" class="font-mono text-[34px] leading-tight font-medium tracking-tight text-zinc-300">0,00</div>
+            </div>
+            <label for="destination-currency" class="sr-only">Para</label>
+            <select id="destination-currency" required class="ccy shrink-0">
               <option value="ARS" selected>ARS — Peso Arg.</option>
               <option value="USD">USD — Dólar</option>
               <option value="BRL">BRL — Real</option>
             </select>
           </div>
+          <p id="rate-summary" class="font-mono text-xs text-zinc-600 mt-3 empty:hidden"></p>
         </div>
 
-        <button type="button" id="btn-convert"
-          class="w-full bg-brand hover:bg-brand-dark text-white font-semibold rounded-lg py-3 flex items-center justify-center gap-2 transition-colors">
-          <span class="btn-text">Converter</span>
-          <div class="spinner hidden" id="convert-spinner"></div>
+        <button type="button" id="btn-convert" class="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-zinc-950 text-sm font-semibold text-white hover:bg-zinc-800 transition-colors disabled:opacity-60 disabled:cursor-wait !h-14 !text-base w-full mt-auto">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 4l4 4-4 4M21 8H7M7 20l-4-4 4-4M3 16h14"/></svg><span class="btn-text">Converter agora</span><div class="spinner hidden" id="convert-spinner"></div>
         </button>
       </form>
-
-      <div id="convert-result" class="hidden bg-blue-50 border-l-4 border-brand rounded-lg p-4">
-        <span class="text-xs text-slate-500">Resultado</span>
-        <h3 id="result-value" class="text-2xl font-bold text-brand">0,00</h3>
-        <p id="rate-summary" class="text-xs text-slate-500 mt-1"></p>
-      </div>
     </section>
 
-    <!-- Histórico -->
-    <section id="section-historico" class="min-w-0 bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col gap-3">
-      <div class="flex items-center justify-between">
-        <h2 class="text-lg font-semibold text-slate-800">Últimas 5 conversões</h2>
-        <button id="btn-refresh-history" title="Atualizar histórico" class="text-slate-400 hover:text-slate-700 transition-colors">🔄</button>
+    <div class="lg:col-span-5 flex flex-col gap-6 min-w-0">
+      <section id="section-historico" class="min-w-0 rounded-2xl bg-white shadow-[0_1px_2px_rgba(10,10,10,.04),0_8px_28px_-14px_rgba(10,10,10,.14)] p-6 flex flex-col">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-tint flex items-center justify-center text-zinc-700"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+            <h2 class="text-lg font-semibold tracking-tight">Últimas 5 conversões</h2>
+          </div>
+          <button id="btn-refresh-history" title="Atualizar histórico" aria-label="Atualizar histórico" class="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-white border border-zinc-200 text-sm font-medium text-zinc-900 hover:bg-zinc-50 transition-colors disabled:opacity-50 disabled:cursor-wait !w-10 !px-0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg></button>
+        </div>
+        <div id="history-loading" class="hidden flex justify-center py-3"><div class="spinner"></div></div>
+        <ul id="history-list" class="mt-3 flex flex-col divide-y divide-zinc-100">
+          <li class="empty-msg">Nenhuma conversão realizada ainda.</li>
+        </ul>
+      </section>
+
+      <section id="section-bcb" class="rounded-2xl bg-tint p-6 flex flex-col gap-3">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div class="flex items-center gap-2.5 font-semibold"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10 12 4l9 6M5 10v8M10 10v8M14 10v8M19 10v8M3 20h18"/></svg><h2>Status do Banco Central (PTAX)</h2></div>
+          <span class="font-mono text-[10px] font-semibold uppercase tracking-wider bg-mint text-gain px-2.5 py-1 rounded-md">Cotação oficial</span>
+        </div>
+        <p class="text-sm text-zinc-600 leading-relaxed">BRL e USD são atualizados automaticamente ao iniciar a aplicação, com a cotação de fechamento oficial do PTAX. ARS não é coberto pelo Banco Central e usa um valor de referência manual, atualizável no cadastro de taxas.</p>
+        <div id="bcb-sync-result" class="hidden font-mono text-xs border-t border-blue-200/70 pt-3 text-zinc-700 leading-relaxed"></div>
+      </section>
+    </div>
+
+    <section id="section-cadastro" class="min-w-0 rounded-2xl bg-white shadow-[0_1px_2px_rgba(10,10,10,.04),0_8px_28px_-14px_rgba(10,10,10,.14)] lg:col-span-12 p-6 sm:p-8 flex flex-col gap-5">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <span class="font-mono text-[11px] font-medium uppercase tracking-[.14em] text-zinc-500 !text-gain">Cadastro</span>
+          <h2 class="text-2xl font-semibold tracking-tight mt-1">Cadastrar / atualizar taxa</h2>
+          <p id="rate-mode-hint" class="text-sm text-zinc-500 mt-1">Quanto vale 1 USD na moeda informada.</p>
+        </div>
+        <div class="inline-flex rounded-xl bg-tint p-1">
+          <button type="button" id="btn-rate-mode-manual" data-mode="manual" class="px-4 py-2 rounded-lg bg-zinc-950 text-white font-medium text-sm transition-colors">Manual</button>
+          <button type="button" id="btn-rate-mode-bcb" data-mode="bcb" class="px-4 py-2 rounded-lg text-zinc-600 hover:text-zinc-950 font-medium text-sm transition-colors">Buscar no BCB</button>
+        </div>
       </div>
-      <div id="history-loading" class="hidden flex justify-center py-3"><div class="spinner"></div></div>
-      <ul id="history-list" class="flex flex-col divide-y divide-slate-100 text-sm">
-        <li class="empty-msg">Nenhuma conversão realizada ainda.</li>
-      </ul>
-    </section>
-
-    <!-- Status BCB -->
-    <section id="section-bcb" class="min-w-0 md:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col gap-3">
-      <div class="flex items-center justify-between flex-wrap gap-2">
-        <h2 class="text-lg font-semibold text-slate-800">Taxas via Banco Central (PTAX)</h2>
-        <button id="btn-sync-bcb"
-          class="text-xs font-semibold bg-accent/10 text-accent-dark hover:bg-accent/20 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1.5">
-          <span id="sync-bcb-label">Sincronizar agora</span>
-          <div class="spinner hidden" id="sync-bcb-spinner"></div>
-        </button>
-      </div>
-      <p class="text-sm text-slate-500">
-        BRL e USD são atualizados automaticamente ao iniciar a aplicação, buscando a cotação de fechamento oficial do PTAX.
-        ARS não é coberto pelo Banco Central e usa um valor de referência manual, atualizável abaixo.
-      </p>
-      <div id="bcb-sync-result" class="hidden text-sm bg-slate-50 rounded-lg p-3 font-mono text-slate-700"></div>
-    </section>
-
-    <!-- Cadastro de taxa -->
-    <section id="section-cadastro" class="min-w-0 md:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col gap-3">
-      <h2 class="text-lg font-semibold text-slate-800">Cadastrar / atualizar taxa</h2>
-
-      <div class="inline-flex self-start rounded-lg border border-slate-300 overflow-hidden text-sm">
-        <button type="button" id="btn-rate-mode-manual" data-mode="manual"
-          class="px-4 py-2 bg-brand text-white font-semibold transition-colors">Manual</button>
-        <button type="button" id="btn-rate-mode-bcb" data-mode="bcb"
-          class="px-4 py-2 bg-white text-slate-600 font-semibold hover:bg-slate-50 transition-colors">Buscar no BCB</button>
-      </div>
-
-      <p id="rate-mode-hint" class="text-xs text-slate-500">Quanto vale 1 USD na moeda informada.</p>
-
       <form id="rate-form" onsubmit="return false;" class="flex flex-col sm:flex-row gap-3 sm:items-end">
-        <div class="flex-1">
-          <label for="rate-currency" class="block text-xs font-semibold text-slate-500 mb-1">Moeda (ex: EUR, CLP)</label>
-          <input type="text" id="rate-currency" maxlength="5" placeholder="Ex: EUR" required
-            class="w-full border border-slate-300 rounded-lg px-3 py-2.5 uppercase focus:outline-none focus:ring-2 focus:ring-brand/40">
+        <div class="grid gap-2 flex-1 sm:max-w-xs">
+          <label for="rate-currency" class="text-sm font-medium text-zinc-800">Moeda</label>
+          <input type="text" id="rate-currency" maxlength="5" placeholder="Ex: EUR, CLP" required class="field uppercase">
         </div>
-        <div class="flex-1" id="rate-value-group">
-          <label for="rate-value" class="block text-xs font-semibold text-slate-500 mb-1">1 USD =</label>
-          <input type="number" id="rate-value" step="any" min="0.0001" placeholder="Ex: 0.92" required
-            class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/40">
+        <div class="grid gap-2 flex-1 sm:max-w-xs" id="rate-value-group">
+          <label for="rate-value" class="text-sm font-medium text-zinc-800">1 USD =</label>
+          <input type="number" id="rate-value" step="any" min="0.0001" placeholder="Ex: 0.92" required class="field">
         </div>
-        <button type="button" id="btn-save-rate"
-          class="bg-accent hover:bg-accent-dark text-white font-semibold rounded-lg px-5 py-2.5 flex items-center justify-center gap-2 transition-colors">
-          <span class="btn-text">Salvar</span>
-          <div class="spinner hidden" id="rate-spinner"></div>
-        </button>
+        <button type="button" id="btn-save-rate" class="sm:ml-auto inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-zinc-950 text-sm font-semibold text-white hover:bg-zinc-800 transition-colors disabled:opacity-60 disabled:cursor-wait !h-11"><span class="btn-text">Salvar</span><div class="spinner hidden" id="rate-spinner"></div></button>
       </form>
     </section>
   </main>
 
   <div id="toast" class="toast hidden"></div>
+  <div id="rates-panel-backdrop" class="hidden fixed inset-0 bg-zinc-950/50 z-40" aria-hidden="true"></div>
 
-  <!-- Backdrop do painel lateral de taxas -->
-  <div id="rates-panel-backdrop" class="hidden fixed inset-0 bg-slate-900/40 z-40" aria-hidden="true"></div>
-
-  <!-- Painel lateral: taxas cadastradas e histórico de 7 dias -->
-  <aside id="rates-panel" aria-hidden="true"
-    class="fixed inset-y-0 right-0 z-50 w-full sm:w-[380px] bg-white shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
-    <div class="flex items-center justify-between px-4 py-4 border-b border-slate-200">
-      <h2 class="text-lg font-semibold text-slate-800">Taxas cadastradas</h2>
-      <button type="button" id="btn-close-rates-panel" aria-label="Fechar painel"
-        class="text-slate-400 hover:text-slate-700 text-xl leading-none">✕</button>
+  <aside id="rates-panel" aria-hidden="true" class="fixed inset-y-0 right-0 z-50 w-full sm:w-[420px] bg-white shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <div class="flex items-center justify-between px-6 py-5">
+      <div><span class="font-mono text-[11px] font-medium uppercase tracking-[.14em] text-zinc-500 !text-gain">Taxas</span><h2 class="text-xl font-semibold tracking-tight">Taxas cadastradas</h2></div>
+      <button type="button" id="btn-close-rates-panel" aria-label="Fechar painel" class="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-white border border-zinc-200 text-sm font-medium text-zinc-900 hover:bg-zinc-50 transition-colors disabled:opacity-50 disabled:cursor-wait !w-10 !px-0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>
-
-    <div class="flex border-b border-slate-200">
-      <button type="button" id="tab-rates-current" data-tab="current"
-        class="flex-1 py-2.5 text-sm font-semibold text-brand border-b-2 border-brand">Cadastradas</button>
-      <button type="button" id="tab-rates-history" data-tab="history"
-        class="flex-1 py-2.5 text-sm font-semibold text-slate-500 border-b-2 border-transparent hover:text-slate-700">Histórico (7 dias)</button>
+    <div class="flex border-b border-zinc-200 px-3">
+      <button type="button" id="tab-rates-current" data-tab="current" class="flex-1 py-3 text-sm font-medium text-zinc-900 border-b-2 border-zinc-900">Cadastradas</button>
+      <button type="button" id="tab-rates-history" data-tab="history" class="flex-1 py-3 text-sm font-medium text-zinc-500 border-b-2 border-transparent hover:text-zinc-700">Histórico (7 dias)</button>
     </div>
-
-    <div class="flex-1 overflow-y-auto p-4">
-      <ul id="rates-current-list" class="flex flex-col divide-y divide-slate-100 text-sm">
-        <li class="empty-msg">Nenhuma taxa cadastrada ainda.</li>
-      </ul>
-      <ul id="rates-history-list" class="hidden flex flex-col divide-y divide-slate-100 text-sm">
-        <li class="empty-msg">Nenhuma mudança nos últimos 7 dias.</li>
-      </ul>
+    <div class="flex-1 overflow-y-auto p-6">
+      <ul id="rates-current-list" class="flex flex-col divide-y divide-zinc-100 text-sm"><li class="empty-msg">Nenhuma taxa cadastrada ainda.</li></ul>
+      <ul id="rates-history-list" class="hidden flex flex-col divide-y divide-zinc-100 text-sm"><li class="empty-msg">Nenhuma mudança nos últimos 7 dias.</li></ul>
     </div>
   </aside>
 
-  <!-- Navegação mobile: ancoras para as secoes desta mesma pagina -->
-  <nav class="fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200 flex md:hidden">
-    <a href="#section-conversor" class="flex-1 flex flex-col items-center gap-0.5 py-2.5 text-slate-600 hover:text-brand">
-      <span class="text-lg leading-none">💱</span><span class="text-[11px] font-semibold">Conversor</span>
-    </a>
-    <a href="#section-historico" class="flex-1 flex flex-col items-center gap-0.5 py-2.5 text-slate-600 hover:text-brand">
-      <span class="text-lg leading-none">🕘</span><span class="text-[11px] font-semibold">Histórico</span>
-    </a>
-    <a href="#section-bcb" class="flex-1 flex flex-col items-center gap-0.5 py-2.5 text-slate-600 hover:text-brand">
-      <span class="text-lg leading-none">🏦</span><span class="text-[11px] font-semibold">Base BCB</span>
-    </a>
+  <nav class="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-zinc-200 flex md:hidden">
+    <a href="#section-conversor" class="flex-1 flex flex-col items-center gap-1 py-2.5 text-zinc-600 hover:text-zinc-950"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg><span class="text-[11px] font-medium">Conversor</span></a>
+    <a href="#section-historico" class="flex-1 flex flex-col items-center gap-1 py-2.5 text-zinc-600 hover:text-zinc-950"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="text-[11px] font-medium">Histórico</span></a>
+    <a href="#section-bcb" class="flex-1 flex flex-col items-center gap-1 py-2.5 text-zinc-600 hover:text-zinc-950"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10 12 4l9 6M5 10v8M10 10v8M14 10v8M19 10v8M3 20h18"/></svg><span class="text-[11px] font-medium">BCB</span></a>
+    <a href="#section-cadastro" class="flex-1 flex flex-col items-center gap-1 py-2.5 text-zinc-600 hover:text-zinc-950"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg><span class="text-[11px] font-medium">Cadastro</span></a>
   </nav>
 
   <script src="script.js"></script>
