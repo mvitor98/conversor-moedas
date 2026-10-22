@@ -1,11 +1,9 @@
+from backend.core import constants
 from backend.domain.strategies import RateStrategy
 from backend.infrastructure.daos import RedisHistoryDAO, RedisRateDAO
 
 
 class CurrencyService:
-    MAX_AMOUNT = 1_000_000_000_000.0  # 10^12 (1 Trilhao)
-    MIN_AMOUNT = 0.01  # Centavos
-
     def __init__(
         self,
         rate_strategy: RateStrategy,
@@ -30,8 +28,11 @@ class CurrencyService:
         if origem == destino:
             raise ValueError("A moeda de origem e destino não pode ser igual.")
 
-        if valor < self.MIN_AMOUNT or valor > self.MAX_AMOUNT:
-            msg = f"O valor deve estar entre {self.MIN_AMOUNT} e 1 trilhao."
+        if (
+            valor < constants.CONVERSION_MIN_AMOUNT
+            or valor > constants.CONVERSION_MAX_AMOUNT
+        ):
+            msg = f"O valor deve estar entre {constants.CONVERSION_MIN_AMOUNT} e 1 trilhao."
             raise ValueError(msg)
 
         taxa_origem = self.rate_strategy.get_rate(origem)

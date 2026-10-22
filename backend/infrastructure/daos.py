@@ -1,12 +1,13 @@
 import json
 import logging
 from typing import List, Optional
+from backend.core import constants
 
 logger = logging.getLogger("conversor_moedas")
 
 
 class RedisRateDAO:
-    HASH_KEY = "taxas_cambio"
+    HASH_KEY = constants.RATE_HASH_KEY
 
     def __init__(self, redis_client):
         self.redis = redis_client
@@ -24,8 +25,8 @@ class RedisRateDAO:
 
 
 class RedisHistoryDAO:
-    LIST_KEY = "historico_conversoes"
-    MAX_ITEMS = 10
+    LIST_KEY = constants.HISTORY_LIST_KEY
+    MAX_ITEMS = constants.HISTORY_MAX_ITEMS
 
     def __init__(self, redis_client):
         self.redis = redis_client
