@@ -1,0 +1,8 @@
+Dockerfile
+.dockerignore
+default.conf
+tests
+jest.config.js
+package.json
+package-lock.json
+node_modules
