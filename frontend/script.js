@@ -6,8 +6,8 @@ const API_BASE_URL = isLocal
 
 let currentRateMode = "manual";
 
-const RATE_MODE_ACTIVE_CLASS = "px-4 py-2 rounded-lg bg-zinc-950 text-white font-medium text-sm transition-colors";
-const RATE_MODE_INACTIVE_CLASS = "px-4 py-2 rounded-lg text-zinc-600 hover:text-zinc-950 font-medium text-sm transition-colors";
+const RATE_MODE_ACTIVE_CLASS = "flex-1 px-3 py-2 rounded-lg bg-zinc-950 text-white font-medium text-sm text-center transition-colors";
+const RATE_MODE_INACTIVE_CLASS = "flex-1 px-3 py-2 rounded-lg text-zinc-600 hover:text-zinc-950 font-medium text-sm text-center transition-colors";
 const RATES_TAB_ACTIVE_CLASS = "flex-1 py-3 text-sm font-medium text-zinc-900 border-b-2 border-zinc-900";
 const RATES_TAB_INACTIVE_CLASS = "flex-1 py-3 text-sm font-medium text-zinc-500 border-b-2 border-transparent hover:text-zinc-700";
 
@@ -339,18 +339,27 @@ function closeRatesPanel() {
 }
 
 function switchRatesTab(tab) {
-  const currentList = document.getElementById("rates-current-list");
-  const historyList = document.getElementById("rates-history-list");
-  const currentTabBtn = document.getElementById("tab-rates-current");
-  const historyTabBtn = document.getElementById("tab-rates-history");
-  const isCurrent = tab === "current";
+  const panels = {
+    current: document.getElementById("rates-current-list"),
+    history: document.getElementById("rates-history-list"),
+    cadastro: document.getElementById("rates-cadastro-panel")
+  };
+  const tabButtons = {
+    current: document.getElementById("tab-rates-current"),
+    history: document.getElementById("tab-rates-history"),
+    cadastro: document.getElementById("tab-rates-cadastro")
+  };
 
-  if (currentList) currentList.classList.toggle("hidden", !isCurrent);
-  if (historyList) historyList.classList.toggle("hidden", isCurrent);
-  if (currentTabBtn) currentTabBtn.className = isCurrent ? RATES_TAB_ACTIVE_CLASS : RATES_TAB_INACTIVE_CLASS;
-  if (historyTabBtn) historyTabBtn.className = !isCurrent ? RATES_TAB_ACTIVE_CLASS : RATES_TAB_INACTIVE_CLASS;
+  Object.keys(panels).forEach(key => {
+    const panel = panels[key];
+    if (panel) panel.classList.toggle("hidden", key !== tab);
+  });
+  Object.keys(tabButtons).forEach(key => {
+    const btn = tabButtons[key];
+    if (btn) btn.className = key === tab ? RATES_TAB_ACTIVE_CLASS : RATES_TAB_INACTIVE_CLASS;
+  });
 
-  if (!isCurrent) loadRateHistory();
+  if (tab === "history") loadRateHistory();
 }
 
 async function loadHistory() {
@@ -413,6 +422,8 @@ if (typeof window !== "undefined") {
     const ratesPanelBackdrop = document.getElementById("rates-panel-backdrop");
     const tabRatesCurrent = document.getElementById("tab-rates-current");
     const tabRatesHistory = document.getElementById("tab-rates-history");
+    const tabRatesCadastro = document.getElementById("tab-rates-cadastro");
+    const btnOpenCadastroMobile = document.getElementById("btn-open-cadastro-mobile");
 
     if (btnConvert) btnConvert.addEventListener("click", executeConversion);
     if (btnSaveRate) btnSaveRate.addEventListener("click", executeSaveRate);
@@ -426,6 +437,13 @@ if (typeof window !== "undefined") {
     if (ratesPanelBackdrop) ratesPanelBackdrop.addEventListener("click", closeRatesPanel);
     if (tabRatesCurrent) tabRatesCurrent.addEventListener("click", () => switchRatesTab("current"));
     if (tabRatesHistory) tabRatesHistory.addEventListener("click", () => switchRatesTab("history"));
+    if (tabRatesCadastro) tabRatesCadastro.addEventListener("click", () => switchRatesTab("cadastro"));
+    if (btnOpenCadastroMobile) {
+      btnOpenCadastroMobile.addEventListener("click", () => {
+        openRatesPanel();
+        switchRatesTab("cadastro");
+      });
+    }
 
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") closeRatesPanel();

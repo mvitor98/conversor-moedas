@@ -12,47 +12,17 @@ html {
 
 /* A classe .hidden acima usa !important para garantir que toggles via JS
    (classList.add/remove("hidden")) sempre vençam. Isso, porém, quebra o padrão
-   `hidden md:flex` do Tailwind (ambas as regras têm a mesma especificidade: uma
-   classe só; a responsiva nunca ganharia de uma !important). Para elementos que
-   só precisam aparecer/sumir por breakpoint (nunca via JS), usamos estas classes
-   próprias em vez de `hidden <bp>:*`. */
-.reveal-md {
-  display: none;
-}
-
+   `hidden sm:inline` do Tailwind (ambas as regras têm a mesma especificidade:
+   uma classe só; a responsiva nunca ganharia de uma !important). Para
+   elementos que só precisam aparecer/sumir por breakpoint (nunca via JS),
+   usamos esta classe própria em vez de `hidden <bp>:*`. */
 .reveal-sm {
-  display: none;
-}
-
-.reveal-xl {
-  display: none;
-}
-
-.reveal-2xl {
   display: none;
 }
 
 @media (min-width: 640px) {
   .reveal-sm {
     display: inline;
-  }
-}
-
-@media (min-width: 768px) {
-  .reveal-md {
-    display: flex;
-  }
-}
-
-@media (min-width: 1280px) {
-  .reveal-xl {
-    display: block;
-  }
-}
-
-@media (min-width: 1536px) {
-  .reveal-2xl {
-    display: block;
   }
 }
 

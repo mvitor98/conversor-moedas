@@ -45,8 +45,10 @@ beforeEach(() => {
     <aside id="rates-panel" class="translate-x-full" aria-hidden="true"></aside>
     <button id="tab-rates-current"></button>
     <button id="tab-rates-history"></button>
+    <button id="tab-rates-cadastro"></button>
     <ul id="rates-current-list"></ul>
     <ul id="rates-history-list" class="hidden"></ul>
+    <div id="rates-cadastro-panel" class="hidden"></div>
   `;
   global.fetch = jest.fn();
   setRateMode("manual");
@@ -253,5 +255,14 @@ describe("Frontend - Painel de taxas cadastradas", () => {
 
     expect(document.getElementById("rates-current-list").classList.contains("hidden")).toBe(true);
     expect(document.getElementById("rates-history-list").classList.contains("hidden")).toBe(false);
+  });
+
+  test("switchRatesTab('cadastro') exibe o formulário de cadastro sem chamar a API", () => {
+    switchRatesTab("cadastro");
+
+    expect(document.getElementById("rates-cadastro-panel").classList.contains("hidden")).toBe(false);
+    expect(document.getElementById("rates-current-list").classList.contains("hidden")).toBe(true);
+    expect(document.getElementById("rates-history-list").classList.contains("hidden")).toBe(true);
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 });
