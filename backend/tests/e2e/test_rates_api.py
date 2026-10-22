@@ -65,6 +65,24 @@ def test_get_registered_rates_lists_saved_currencies() -> None:
     assert all("atualizado_em" in item for item in response.json())
 
 
+def test_get_registered_rates_handles_legacy_entry_without_timestamp(
+    override_redis_dependency,
+) -> None:
+    """Taxas gravadas antes do campo atualizado_em existir (valor numérico puro
+    no Redis, sem JSON) não podem derrubar o endpoint com 500: o DTO de resposta
+    precisa aceitar atualizado_em nulo para esses registros legados."""
+    override_redis_dependency.hset(constants.RATE_HASH_KEY, "JPY", "150.0")
+    client.post("/taxas/BRL/5.0")
+
+    response = client.get("/taxas")
+
+    assert response.status_code == 200
+    por_moeda = {item["moeda"]: item for item in response.json()}
+    assert por_moeda["JPY"]["atualizado_em"] is None
+    assert por_moeda["JPY"]["fonte"] == "manual"
+    assert por_moeda["BRL"]["atualizado_em"] is not None
+
+
 def test_get_rate_history_returns_404_when_empty() -> None:
     """Testa que GET /taxas/historico retorna 404 quando não há mudanças."""
     response = client.get("/taxas/historico")

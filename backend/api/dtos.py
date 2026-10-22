@@ -1,6 +1,6 @@
 ﻿"""Módulo contendo os Data Transfer Objects (DTOs) para a API."""
 
-from typing import Dict
+from typing import Dict, Optional
 from pydantic import BaseModel, Field
 
 
@@ -69,9 +69,12 @@ class RateRecordDTO(BaseModel):
         description="Origem da taxa: 'manual' ou 'bcb' (PTAX).",
         json_schema_extra={"example": "bcb"},
     )
-    atualizado_em: str = Field(
-        ...,
-        description="Data/hora (UTC, precisão de segundo) do registro.",
+    atualizado_em: Optional[str] = Field(
+        None,
+        description=(
+            "Data/hora (UTC, precisão de segundo) do registro. Nulo para taxas "
+            "gravadas antes dessa informação existir."
+        ),
         json_schema_extra={"example": "2026-10-22T02:30:15+00:00"},
     )
 
