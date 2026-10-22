@@ -32,7 +32,8 @@ class CurrencyService:
             valor < constants.CONVERSION_MIN_AMOUNT
             or valor > constants.CONVERSION_MAX_AMOUNT
         ):
-            msg = f"O valor deve estar entre {constants.CONVERSION_MIN_AMOUNT} e 1 trilhao."
+            min_valor = constants.CONVERSION_MIN_AMOUNT
+            msg = f"O valor deve estar entre {min_valor} e 1 trilhao."
             raise ValueError(msg)
 
         taxa_origem = self.rate_strategy.get_rate(origem)
