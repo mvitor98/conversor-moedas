@@ -89,7 +89,7 @@ html {
   font-size: 0.9rem;
   font-weight: 500;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  z-index: 50;
+  z-index: 60;
 }
 
 @media (min-width: 768px) {

@@ -52,17 +52,38 @@ class RateSyncService:
         return {resultado["moeda"]: resultado["taxa"]}
 
     def sync_from_bcb(self) -> dict:
-        """Busca a cotação BRL/USD mais recente no BCB e grava ambas com fonte 'bcb'.
+        """Sincroniza BRL/USD e qualquer outra moeda já cadastrada coberta pelo PTAX.
+
+        BRL e USD continuam obrigatórios: uma falha ao sincronizá-los propaga
+        (comportamento inalterado, mapeado para 502 pelo router). Além deles,
+        toda moeda já cadastrada no banco que o PTAX cobre também é
+        atualizada — assim, uma moeda cadastrada manualmente ou via BCB numa
+        sincronização anterior (ex: EUR) continua acompanhando o câmbio sem
+        precisar ser sincronizada uma a uma. Uma falha ao sincronizar uma
+        dessas moedas extras (ex: sem cotação dela no período) é registrada
+        em log e não derruba a sincronização das demais.
 
         Returns:
-            dict: Mapa moeda -> taxa com os valores sincronizados.
+            dict: Mapa moeda -> taxa com os valores sincronizados com sucesso.
 
         Raises:
-            RuntimeError: Se a API do BCB estiver inacessível ou sem dados.
+            RuntimeError: Se BRL ou USD não puderem ser sincronizados.
         """
         taxas = {}
         taxas.update(self.sync_currency_from_bcb("BRL"))
         taxas.update(self.sync_currency_from_bcb(constants.BASE_CURRENCY))
+
+        moedas_cadastradas = {
+            registro["moeda"]
+            for registro in self.currency_service.rate_dao.get_all_rates()
+        }
+        moedas_extras = (moedas_cadastradas & PTAX_SUPPORTED_CURRENCIES) - set(taxas)
+        for moeda in sorted(moedas_extras):
+            try:
+                taxas.update(self.sync_currency_from_bcb(moeda))
+            except RuntimeError as exc:
+                logger.warning(f"Falha ao sincronizar {moeda} via BCB/PTAX: {exc}")
+
         return taxas
 
     def seed_fallback_rate_if_missing(self, moeda: str, valor_padrao: float) -> None:

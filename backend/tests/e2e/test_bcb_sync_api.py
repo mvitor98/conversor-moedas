@@ -29,6 +29,28 @@ def test_sync_bcb_rates_for_specific_currency() -> None:
     assert response.json()["taxas"] == {"EUR": round(5.0 / 6.0, 4)}
 
 
+def test_sync_bcb_rates_without_moeda_also_updates_registered_currency() -> None:
+    """A sincronização geral (sem ?moeda=) deve atualizar toda moeda já
+    cadastrada que o PTAX cobre, não só BRL/USD."""
+    client.post("/taxas/GBP/0.75")
+
+    with patch(
+        "backend.domain.rate_sync_service.fetch_ptax_rate",
+        side_effect=lambda moeda: {"USD": 5.0, "GBP": 4.0}[moeda],
+    ):
+        response = client.post("/taxas/sincronizar-bcb")
+
+    assert response.status_code == 200
+    taxas = response.json()["taxas"]
+    assert taxas["BRL"] == 5.0
+    assert taxas["USD"] == 1.0
+    assert taxas["GBP"] == round(5.0 / 4.0, 4)
+
+    get_response = client.get("/taxas")
+    gbp = next(item for item in get_response.json() if item["moeda"] == "GBP")
+    assert gbp["fonte"] == "bcb"
+
+
 def test_sync_bcb_rates_for_unsupported_currency_returns_400() -> None:
     """Testa que pedir sincronização de uma moeda fora do PTAX retorna 400."""
     response = client.post("/taxas/sincronizar-bcb?moeda=ARS")

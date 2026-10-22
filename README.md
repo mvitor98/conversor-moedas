@@ -74,7 +74,7 @@ Localmente (`docker compose up`), o frontend roda atrás de um Nginx que também
 
 Cada taxa cadastrada carrega uma tag de proveniência (`fonte`) e um timestamp (`atualizado_em`, UTC, precisão de segundo), persistidos junto com o valor no Redis:
 
-* **`bcb`** — sincronizada automaticamente com a **API PTAX (Olinda) do Banco Central do Brasil**. No startup da aplicação (e também sob demanda via `POST /taxas/sincronizar-bcb`), o sistema busca a cotação de fechamento PTAX mais recente e grava `BRL` e `USD` com essa fonte. Qualquer outra moeda coberta pelo PTAX (AUD, CAD, CHF, DKK, EUR, GBP, JPY, NOK, SEK) pode ser sincronizada individualmente via `POST /taxas/sincronizar-bcb?moeda={moeda}` — como o PTAX só cota moedas estrangeiras contra o BRL, a taxa final é calculada via cruzamento (`BRL/USD ÷ BRL/moeda`).
+* **`bcb`** — sincronizada automaticamente com a **API PTAX (Olinda) do Banco Central do Brasil**. No startup da aplicação (e também sob demanda via `POST /taxas/sincronizar-bcb`), o sistema sempre atualiza `BRL` e `USD`, além de **toda outra moeda já cadastrada no banco que o PTAX cobre** (AUD, CAD, CHF, DKK, EUR, GBP, JPY, NOK, SEK) — uma moeda cadastrada manualmente ou numa sincronização anterior continua acompanhando o câmbio sem precisar ser sincronizada uma a uma. Uma moeda específica (cadastrada ou não) também pode ser sincronizada isoladamente via `POST /taxas/sincronizar-bcb?moeda={moeda}`. Como o PTAX só cota moedas estrangeiras contra o BRL, a taxa final é calculada via cruzamento (`BRL/USD ÷ BRL/moeda`). Falha ao sincronizar uma moeda extra (ex: sem cotação dela no período) fica só em log e não interrompe as demais — só BRL/USD falhando derruba a sincronização inteira (`502`).
 * **`manual`** — cadastrada via `POST /taxas/{moeda}/{valor}`, ou usada como valor de referência inicial para moedas que o PTAX não cobre (ex: **ARS**, peso argentino — o Banco Central não publica cotação oficial para essa moeda). Pode ser atualizada a qualquer momento pelo mesmo endpoint, e excluída via `DELETE /taxas/{moeda}`.
 
 Taxas de fonte `bcb` **não podem ser excluídas** (`DELETE /taxas/{moeda}` retorna `400` nesse caso) — fazem mais sentido como fonte sempre atualizada automaticamente; excluí-las só adiaria o problema até a próxima sincronização.
@@ -144,7 +144,7 @@ Ambas as suítes também rodam automaticamente no CI (GitHub Actions) a cada pus
 | `DELETE` | `/taxas/{moeda}` | Exclui uma taxa cadastrada — só para fonte `manual` | `200 OK` (`400` se a fonte for `bcb`; `404` se a moeda não existir) |
 | `GET` | `/taxas` | Lista todas as taxas cadastradas, mais recente primeiro | `200 OK` (`404` se não houver nenhuma) |
 | `GET` | `/taxas/historico` | Mudanças de valor de taxa nos últimos 7 dias (feed combinado) | `200 OK` (`404` se vazio) |
-| `POST` | `/taxas/sincronizar-bcb` | Sincroniza com o PTAX do Banco Central — sem `?moeda=`, atualiza BRL/USD; com `?moeda=X`, só aquela moeda | `200 OK` (`502` se o BCB estiver indisponível) |
+| `POST` | `/taxas/sincronizar-bcb` | Sincroniza com o PTAX do Banco Central — sem `?moeda=`, atualiza BRL/USD e toda moeda já cadastrada coberta pelo PTAX; com `?moeda=X`, só aquela moeda | `200 OK` (`502` se BRL/USD não puderem ser sincronizados) |
 | `GET` | `/converter/{valor}/{origem}/{destino}` | Converte um valor entre duas moedas cadastradas | `200 OK` (`400` valor inválido ou origem = destino; `404` moeda sem taxa cadastrada) |
 | `GET` | `/conversoes` | Retorna o histórico das últimas 5 conversões | `200 OK` (`404` se vazio) |
 
