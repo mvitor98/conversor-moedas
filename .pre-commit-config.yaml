@@ -23,7 +23,7 @@ repos:
     hooks:
       - id: pytest
         name: pytest-executor
-        entry: pytest
+        entry: cmd /c venv\\Scripts\\python.exe -m pytest
         language: system
         pass_filenames: false
         always_run: true

@@ -6,7 +6,7 @@ from backend.infrastructure.redis_client import get_redis_client
 
 
 def test_get_redis_client_uses_upstash_when_credentials_set(monkeypatch) -> None:
-    """Deve usar o cliente HTTP REST do Upstash quando URL e token estão configurados."""
+    """Deve usar o cliente HTTP REST do Upstash quando URL/token estão configurados."""
     monkeypatch.setattr(settings, "UPSTASH_REDIS_REST_URL", " https://fake-upstash.io ")
     monkeypatch.setattr(settings, "UPSTASH_REDIS_REST_TOKEN", " fake-token ")
 
@@ -23,7 +23,7 @@ def test_get_redis_client_uses_upstash_when_credentials_set(monkeypatch) -> None
 def test_get_redis_client_falls_back_to_tcp_without_upstash_credentials(
     monkeypatch,
 ) -> None:
-    """Deve usar o cliente TCP tradicional quando as credenciais do Upstash estão ausentes."""
+    """Deve usar o cliente TCP se as credenciais do Upstash estiverem ausentes."""
     monkeypatch.setattr(settings, "UPSTASH_REDIS_REST_URL", None)
     monkeypatch.setattr(settings, "UPSTASH_REDIS_REST_TOKEN", None)
     monkeypatch.setattr(settings, "REDIS_URL", "redis://localhost:6379/0")
