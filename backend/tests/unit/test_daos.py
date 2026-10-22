@@ -112,6 +112,25 @@ def test_get_all_rates_returns_every_currency() -> None:
     assert brl["fonte"] == "bcb"
 
 
+def test_delete_rate_returns_true_when_removed() -> None:
+    """Testa que delete_rate devolve True e chama HDEL com a chave correta."""
+    mock_redis: MagicMock = MagicMock()
+    mock_redis.hdel.return_value = 1
+    dao: RedisRateDAO = RedisRateDAO(mock_redis)
+
+    assert dao.delete_rate("eur") is True
+    mock_redis.hdel.assert_called_once_with("taxas_cambio", "EUR")
+
+
+def test_delete_rate_returns_false_when_not_found() -> None:
+    """Testa que delete_rate devolve False quando a moeda não existe no hash."""
+    mock_redis: MagicMock = MagicMock()
+    mock_redis.hdel.return_value = 0
+    dao: RedisRateDAO = RedisRateDAO(mock_redis)
+
+    assert dao.delete_rate("XYZ") is False
+
+
 def test_add_rate_history_entry_prunes_entries_older_than_7_days() -> None:
     """Testa que add_rate_history_entry grava e poda o que passou dos 7 dias."""
     mock_redis: MagicMock = MagicMock()

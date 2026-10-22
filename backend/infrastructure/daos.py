@@ -56,6 +56,10 @@ class RedisRateDAO:
             taxas.append({"moeda": moeda, **details})
         return taxas
 
+    def delete_rate(self, currency: str) -> bool:
+        removido = self.redis.hdel(self.HASH_KEY, currency.upper())
+        return bool(removido)
+
     def _parse_rate_value(self, val) -> dict:
         try:
             parsed = json.loads(val)

@@ -1,5 +1,6 @@
 ﻿"""Testes E2E para os endpoints de cadastro de taxas."""
 
+from unittest.mock import patch
 from fastapi.testclient import TestClient
 from backend.core import constants
 from backend.main import app
@@ -63,6 +64,42 @@ def test_get_registered_rates_lists_saved_currencies() -> None:
     moedas = {item["moeda"] for item in response.json()}
     assert {"BRL", "ARS"}.issubset(moedas)
     assert all("atualizado_em" in item for item in response.json())
+
+
+def test_delete_rate_removes_manual_rate() -> None:
+    """Testa que DELETE /taxas/{moeda} remove uma taxa cadastrada manualmente."""
+    client.post("/taxas/BRL/5.0")
+    client.post("/taxas/CLP/900.0")
+
+    response = client.delete("/taxas/CLP")
+    assert response.status_code == 200
+    assert response.json()["moeda"] == "CLP"
+
+    get_response = client.get("/taxas")
+    moedas = {item["moeda"] for item in get_response.json()}
+    assert "CLP" not in moedas
+    assert "BRL" in moedas
+
+
+def test_delete_rate_returns_404_for_unregistered_currency() -> None:
+    """Testa que DELETE /taxas/{moeda} retorna 404 para moeda sem taxa cadastrada."""
+    response = client.delete("/taxas/ZZZ")
+    assert response.status_code == 404
+    assert "erro" in response.json()
+
+
+def test_delete_rate_returns_400_for_bcb_source() -> None:
+    """Testa que DELETE /taxas/{moeda} recusa excluir uma taxa sincronizada via BCB."""
+    with patch("backend.domain.rate_sync_service.fetch_ptax_rate", return_value=5.0134):
+        client.post("/taxas/sincronizar-bcb")
+
+    response = client.delete("/taxas/USD")
+    assert response.status_code == 400
+    assert "erro" in response.json()
+
+    get_response = client.get("/taxas")
+    moedas = {item["moeda"] for item in get_response.json()}
+    assert "USD" in moedas
 
 
 def test_get_registered_rates_handles_legacy_entry_without_timestamp(

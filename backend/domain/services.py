@@ -87,5 +87,18 @@ class CurrencyService:
             raise KeyError("Nenhuma mudança de taxa registrada nos últimos dias.")
         return historico
 
+    def delete_rate(self, moeda: str) -> str:
+        moeda = moeda.upper()
+        taxa_atual = self.rate_dao.get_rate_details(moeda)
+        if taxa_atual is None:
+            raise KeyError("Nenhuma taxa cadastrada para essa moeda.")
+        if taxa_atual["fonte"] != constants.RATE_SOURCE_MANUAL:
+            raise ValueError(
+                "Só é possível excluir taxas cadastradas manualmente. "
+                "Taxas sincronizadas com o BCB são atualizadas automaticamente."
+            )
+        self.rate_dao.delete_rate(moeda)
+        return moeda
+
 
 CurrencyConverterService = CurrencyService

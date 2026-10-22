@@ -79,6 +79,15 @@ class RateRecordDTO(BaseModel):
     )
 
 
+class RateDeleteResponseDTO(BaseModel):
+    """DTO de resposta para a exclusão de uma taxa de câmbio."""
+
+    mensagem: str = Field(..., description="Mensagem de confirmação da exclusão.")
+    moeda: str = Field(
+        ..., description="Moeda removida.", json_schema_extra={"example": "EUR"}
+    )
+
+
 class BcbSyncResponseDTO(BaseModel):
     """DTO de resposta para a sincronização de taxas com o BCB/PTAX."""
 

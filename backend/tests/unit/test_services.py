@@ -138,3 +138,43 @@ def test_get_rate_history_raises_key_error_when_empty() -> None:
 
     with pytest.raises(KeyError, match="Nenhuma mudança de taxa"):
         service.get_rate_history()
+
+
+def test_delete_rate_removes_manual_rate() -> None:
+    """Testa que delete_rate remove uma taxa de fonte manual e normaliza a moeda."""
+    mock_rate_dao: MagicMock = MagicMock()
+    mock_rate_dao.get_rate_details.return_value = {
+        "taxa": 6.1,
+        "fonte": "manual",
+        "atualizado_em": "2026-10-22T10:00:00+00:00",
+    }
+    service: CurrencyService = CurrencyService(MagicMock(), mock_rate_dao, MagicMock())
+
+    assert service.delete_rate("eur") == "EUR"
+    mock_rate_dao.delete_rate.assert_called_once_with("EUR")
+
+
+def test_delete_rate_raises_key_error_when_not_found() -> None:
+    """Testa que delete_rate gera KeyError (-> 404) para moeda sem taxa cadastrada."""
+    mock_rate_dao: MagicMock = MagicMock()
+    mock_rate_dao.get_rate_details.return_value = None
+    service: CurrencyService = CurrencyService(MagicMock(), mock_rate_dao, MagicMock())
+
+    with pytest.raises(KeyError, match="Nenhuma taxa cadastrada"):
+        service.delete_rate("XYZ")
+    mock_rate_dao.delete_rate.assert_not_called()
+
+
+def test_delete_rate_raises_value_error_for_bcb_source() -> None:
+    """Testa que delete_rate recusa (-> 400) excluir taxas de fonte bcb."""
+    mock_rate_dao: MagicMock = MagicMock()
+    mock_rate_dao.get_rate_details.return_value = {
+        "taxa": 5.0,
+        "fonte": "bcb",
+        "atualizado_em": "2026-10-22T10:00:00+00:00",
+    }
+    service: CurrencyService = CurrencyService(MagicMock(), mock_rate_dao, MagicMock())
+
+    with pytest.raises(ValueError, match="manualmente"):
+        service.delete_rate("BRL")
+    mock_rate_dao.delete_rate.assert_not_called()

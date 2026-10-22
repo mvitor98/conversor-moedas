@@ -13,7 +13,9 @@ const {
   openRatesPanel,
   closeRatesPanel,
   switchRatesTab,
-  formatTimestamp
+  formatTimestamp,
+  deleteRate,
+  renderRateRecord
 } = require("../script");
 
 function emptyJsonResponse() {
@@ -212,6 +214,52 @@ describe("Frontend - Painel de taxas cadastradas", () => {
     expect(list.innerHTML).toContain("BRL");
     expect(list.innerHTML).toContain("ARS");
     expect(document.getElementById("last-updated-global").textContent).toContain("Última atualização");
+  });
+
+  test("renderRateRecord só inclui botão de excluir para taxas manuais", () => {
+    const manual = renderRateRecord({ moeda: "EUR", taxa: 0.92, fonte: "manual" }, { deletable: true });
+    const bcb = renderRateRecord({ moeda: "BRL", taxa: 5.0, fonte: "bcb" }, { deletable: true });
+    const semFlag = renderRateRecord({ moeda: "ARS", taxa: 1000, fonte: "manual" });
+
+    expect(manual).toContain("btn-delete-rate");
+    expect(bcb).not.toContain("btn-delete-rate");
+    expect(semFlag).not.toContain("btn-delete-rate");
+  });
+
+  test("deleteRate exclui a taxa após confirmação e remove a moeda dos selects", async () => {
+    window.confirm = jest.fn().mockReturnValue(true);
+    updateCurrencySelects("EUR");
+    global.fetch
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ mensagem: "ok", moeda: "EUR" }) })
+      .mockResolvedValueOnce(emptyJsonResponse());
+
+    await deleteRate("EUR");
+
+    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("/taxas/EUR"), { method: "DELETE" });
+    expect(document.getElementById("toast").textContent).toContain("excluída");
+    const originOptions = Array.from(document.getElementById("origin-currency").options).map(o => o.value);
+    expect(originOptions).not.toContain("EUR");
+  });
+
+  test("deleteRate não chama a API quando o usuário cancela a confirmação", async () => {
+    window.confirm = jest.fn().mockReturnValue(false);
+
+    await deleteRate("BRL");
+
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  test("deleteRate exibe toast de erro quando o backend recusa (ex: taxa via BCB)", async () => {
+    window.confirm = jest.fn().mockReturnValue(true);
+    global.fetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: async () => ({ erro: "Só é possível excluir taxas cadastradas manualmente." })
+    });
+
+    await deleteRate("USD");
+
+    expect(document.getElementById("toast").textContent).toContain("manualmente");
   });
 
   test("loadRegisteredRates sincroniza os selects com moedas já cadastradas no banco", async () => {

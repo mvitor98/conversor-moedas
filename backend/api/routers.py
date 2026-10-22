@@ -8,6 +8,7 @@ from backend.api.dtos import (
     BcbSyncResponseDTO,
     ConversionResponseDTO,
     ErrorResponseDTO,
+    RateDeleteResponseDTO,
     RateRecordDTO,
     RateResponseDTO,
 )
@@ -169,6 +170,40 @@ def get_registered_rates(
         List[Dict[str, Any]]: Lista de taxas cadastradas.
     """
     return service.get_all_rates()
+
+
+@router.delete(
+    "/taxas/{moeda}",
+    status_code=status.HTTP_200_OK,
+    response_model=RateDeleteResponseDTO,
+    responses={
+        400: {"model": ErrorResponseDTO},
+        404: {"model": ErrorResponseDTO},
+        429: {"model": ErrorResponseDTO},
+    },
+    summary="Remove uma taxa cadastrada manualmente",
+    description=(
+        "Exclui a taxa cadastrada para a moeda informada. Só é permitido para "
+        "taxas de fonte 'manual' — taxas sincronizadas com o BCB não podem ser "
+        "excluídas, pois são atualizadas automaticamente."
+    ),
+    dependencies=[Depends(rate_limiter(constants.RATE_LIMIT_WRITE_MAX))],
+)
+def delete_rate(
+    moeda: str,
+    service: CurrencyService = Depends(get_currency_service),
+) -> Dict[str, Any]:
+    """Endpoint para excluir uma taxa de câmbio cadastrada manualmente.
+
+    Args:
+        moeda (str): Código da moeda a ser removida.
+        service (CurrencyService): Serviço injetado.
+
+    Returns:
+        Dict[str, Any]: Mensagem de confirmação e a moeda removida.
+    """
+    moeda_removida = service.delete_rate(moeda)
+    return {"mensagem": "Taxa removida com sucesso.", "moeda": moeda_removida}
 
 
 @router.get(

@@ -246,8 +246,14 @@ async function syncBcbRates() {
   }
 }
 
-function renderRateRecord(item) {
+function renderRateRecord(item, options = {}) {
   const badgeClass = item.fonte === "bcb" ? "badge badge-bcb" : "badge badge-manual";
+  const podeExcluir = Boolean(options.deletable) && item.fonte === "manual";
+  const botaoExcluir = podeExcluir
+    ? `<button type="button" class="btn-delete-rate shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 hover:text-red-600 hover:bg-red-50 transition-colors" data-moeda="${item.moeda}" aria-label="Excluir taxa de ${item.moeda}" title="Excluir taxa">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z"/></svg>
+      </button>`
+    : "";
   return `<li class="py-2.5 flex items-center justify-between gap-2">
     <div class="min-w-0">
       <div class="flex items-center gap-1.5">
@@ -256,7 +262,10 @@ function renderRateRecord(item) {
       </div>
       <div class="text-xs text-slate-400 tabular-nums">${formatTimestamp(item.atualizado_em)}</div>
     </div>
-    <span class="font-semibold text-slate-700 tabular-nums">${formatCurrencyValue(item.taxa)}</span>
+    <div class="flex items-center gap-2 shrink-0">
+      <span class="font-semibold text-slate-700 tabular-nums">${formatCurrencyValue(item.taxa)}</span>
+      ${botaoExcluir}
+    </div>
   </li>`;
 }
 
@@ -278,7 +287,7 @@ async function loadRegisteredRates() {
       throw new Error("Erro ao carregar as taxas cadastradas.");
     }
 
-    if (list) list.innerHTML = data.map(renderRateRecord).join("");
+    if (list) list.innerHTML = data.map(item => renderRateRecord(item, { deletable: true })).join("");
     data.forEach(item => updateCurrencySelects(item.moeda));
 
     if (globalTimestamp && data.length) {
@@ -409,6 +418,38 @@ function updateCurrencySelects(newCurrency) {
   }
 }
 
+function removeCurrencyFromSelects(currency) {
+  [document.getElementById("origin-currency"), document.getElementById("destination-currency")].forEach(select => {
+    if (!select) return;
+    const option = Array.from(select.options).find(opt => opt.value === currency);
+    if (option) select.removeChild(option);
+  });
+}
+
+async function deleteRate(moeda) {
+  if (!moeda) return;
+  const confirmar = typeof window !== "undefined" && typeof window.confirm === "function"
+    ? window.confirm(`Excluir a taxa cadastrada de ${moeda}?`)
+    : true;
+  if (!confirmar) return;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/taxas/${moeda}`, { method: "DELETE" });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.erro || "Erro ao excluir a taxa.");
+    }
+
+    showToast(`Taxa de ${moeda} excluída.`, "success");
+    removeCurrencyFromSelects(moeda);
+    await loadRegisteredRates();
+  } catch (err) {
+    console.error("[Delete Rate Error]:", err);
+    showToast(err.message, "error");
+  }
+}
+
 if (typeof window !== "undefined") {
   document.addEventListener("DOMContentLoaded", () => {
     const btnConvert = document.getElementById("btn-convert");
@@ -425,6 +466,7 @@ if (typeof window !== "undefined") {
     const tabRatesHistory = document.getElementById("tab-rates-history");
     const tabRatesCadastro = document.getElementById("tab-rates-cadastro");
     const btnOpenCadastroMobile = document.getElementById("btn-open-cadastro-mobile");
+    const ratesCurrentList = document.getElementById("rates-current-list");
 
     if (btnConvert) btnConvert.addEventListener("click", executeConversion);
     if (btnSaveRate) btnSaveRate.addEventListener("click", executeSaveRate);
@@ -443,6 +485,12 @@ if (typeof window !== "undefined") {
       btnOpenCadastroMobile.addEventListener("click", () => {
         openRatesPanel();
         switchRatesTab("cadastro");
+      });
+    }
+    if (ratesCurrentList) {
+      ratesCurrentList.addEventListener("click", (e) => {
+        const btn = e.target.closest(".btn-delete-rate");
+        if (btn) deleteRate(btn.dataset.moeda);
       });
     }
 
@@ -465,6 +513,9 @@ if (typeof module !== "undefined" && module.exports) {
     setRateMode,
     loadHistory,
     updateCurrencySelects,
+    removeCurrencyFromSelects,
+    deleteRate,
+    renderRateRecord,
     swapCurrencies,
     syncBcbRates,
     loadRegisteredRates,

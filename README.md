@@ -75,14 +75,16 @@ Localmente (`docker compose up`), o frontend roda atrás de um Nginx que também
 Cada taxa cadastrada carrega uma tag de proveniência (`fonte`) e um timestamp (`atualizado_em`, UTC, precisão de segundo), persistidos junto com o valor no Redis:
 
 * **`bcb`** — sincronizada automaticamente com a **API PTAX (Olinda) do Banco Central do Brasil**. No startup da aplicação (e também sob demanda via `POST /taxas/sincronizar-bcb`), o sistema busca a cotação de fechamento PTAX mais recente e grava `BRL` e `USD` com essa fonte. Qualquer outra moeda coberta pelo PTAX (AUD, CAD, CHF, DKK, EUR, GBP, JPY, NOK, SEK) pode ser sincronizada individualmente via `POST /taxas/sincronizar-bcb?moeda={moeda}` — como o PTAX só cota moedas estrangeiras contra o BRL, a taxa final é calculada via cruzamento (`BRL/USD ÷ BRL/moeda`).
-* **`manual`** — cadastrada via `POST /taxas/{moeda}/{valor}`, ou usada como valor de referência inicial para moedas que o PTAX não cobre (ex: **ARS**, peso argentino — o Banco Central não publica cotação oficial para essa moeda). Pode ser atualizada a qualquer momento pelo mesmo endpoint.
+* **`manual`** — cadastrada via `POST /taxas/{moeda}/{valor}`, ou usada como valor de referência inicial para moedas que o PTAX não cobre (ex: **ARS**, peso argentino — o Banco Central não publica cotação oficial para essa moeda). Pode ser atualizada a qualquer momento pelo mesmo endpoint, e excluída via `DELETE /taxas/{moeda}`.
+
+Taxas de fonte `bcb` **não podem ser excluídas** (`DELETE /taxas/{moeda}` retorna `400` nesse caso) — fazem mais sentido como fonte sempre atualizada automaticamente; excluí-las só adiaria o problema até a próxima sincronização.
 
 Falhas ao consultar o BCB (API fora do ar, sem cotação no período) nunca derrubam a aplicação: ficam registradas em log e a API continua funcionando com as taxas já existentes. Taxas gravadas antes do campo `atualizado_em` existir retornam esse valor como `null` em vez de quebrar a resposta — compatibilidade retroativa tratada tanto na camada de dados quanto no DTO (`Optional[str]`).
 
 ### Painel lateral: taxas, histórico e cadastro
 
 O botão **"Taxas"** no cabeçalho (mesmo tamanho do botão "Sincronizar agora") abre um painel lateral (desliza da direita) com três abas:
-* **Cadastradas** — todas as taxas atualmente em vigor (`GET /taxas`), com moeda, valor, fonte (badge) e timestamp de atualização.
+* **Cadastradas** — todas as taxas atualmente em vigor (`GET /taxas`), com moeda, valor, fonte (badge) e timestamp de atualização. Taxas de fonte `manual` têm um ícone de exclusão (com confirmação); taxas `bcb` não, já que não podem ser excluídas.
 * **Histórico (7 dias)** — mudanças de valor registradas nos últimos 7 dias (`GET /taxas/historico`), feed combinado de todas as moedas. Uma entrada só é criada quando o valor **realmente muda** — re-sincronizações do BCB com o mesmo valor (comuns a cada restart do servidor, frequente no plano free do Render) não geram ruído no histórico.
 * **Cadastrar** — formulário de cadastro/atualização de taxa com o seletor **Manual / Buscar no BCB** (em modo BCB, basta informar a moeda e o valor é obtido automaticamente a partir do PTAX). No mobile, o atalho "Cadastro" da barra inferior abre o painel direto nessa aba.
 
@@ -139,6 +141,7 @@ Ambas as suítes também rodam automaticamente no CI (GitHub Actions) a cada pus
 | Método | Endpoint | Descrição | Retorno Esperado |
 | :--- | :--- | :--- | :--- |
 | `POST` | `/taxas/{moeda}/{valor}` | Cadastra ou atualiza uma taxa em relação ao USD base (fonte `manual`) | `201 Created` |
+| `DELETE` | `/taxas/{moeda}` | Exclui uma taxa cadastrada — só para fonte `manual` | `200 OK` (`400` se a fonte for `bcb`; `404` se a moeda não existir) |
 | `GET` | `/taxas` | Lista todas as taxas cadastradas, mais recente primeiro | `200 OK` (`404` se não houver nenhuma) |
 | `GET` | `/taxas/historico` | Mudanças de valor de taxa nos últimos 7 dias (feed combinado) | `200 OK` (`404` se vazio) |
 | `POST` | `/taxas/sincronizar-bcb` | Sincroniza com o PTAX do Banco Central — sem `?moeda=`, atualiza BRL/USD; com `?moeda=X`, só aquela moeda | `200 OK` (`502` se o BCB estiver indisponível) |
