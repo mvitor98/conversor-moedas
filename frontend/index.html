@@ -1,99 +1,154 @@
-﻿<!DOCTYPE html>
-<html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Conversor de Moedas - Fintech</title>
   <link rel="icon" href="data:,">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ["Inter", "sans-serif"] },
+          colors: {
+            brand: { DEFAULT: "#3182ce", dark: "#2b6cb0" },
+            accent: { DEFAULT: "#38a169", dark: "#2f855a" }
+          }
+        }
+      }
+    };
+  </script>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-  <div class="container">
-    <header class="app-header">
-      <h1>💱 Conversor de Moedas</h1>
-      <p>Consulte taxas de câmbio atualizadas em tempo real</p>
-    </header>
+<body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen pb-20 md:pb-10">
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-5xl mx-auto px-4 py-4">
+      <h1 class="text-xl font-bold text-slate-900">💱 Conversor de Moedas</h1>
+      <p class="text-sm text-slate-500">Taxas atualizadas automaticamente via Banco Central (PTAX)</p>
+    </div>
+  </header>
 
-    <main class="grid-layout">
-      <!-- Seção 1: Conversor principal -->
-      <section class="card">
-        <h2>Converter Valor</h2>
-        <form id="convert-form" onsubmit="return false;">
-          <div class="form-group">
-            <label for="amount">Valor:</label>
-            <input type="number" id="amount" step="any" min="0.01" placeholder="Ex: 100.00" required>
+  <main class="max-w-5xl mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Conversor -->
+    <section id="section-conversor" class="min-w-0 bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col gap-4">
+      <h2 class="text-lg font-semibold text-slate-800">Converter valor</h2>
+      <form id="convert-form" onsubmit="return false;" class="flex flex-col gap-3">
+        <div>
+          <label for="amount" class="block text-xs font-semibold text-slate-500 mb-1">Valor</label>
+          <input type="number" id="amount" step="any" min="0.01" placeholder="Ex: 100.00" required
+            class="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand">
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:items-end gap-2">
+          <div class="min-w-0 sm:flex-1">
+            <label for="origin-currency" class="block text-xs font-semibold text-slate-500 mb-1">De</label>
+            <select id="origin-currency" required
+              class="w-full border border-slate-300 rounded-lg px-3 py-2.5 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-brand/40">
+              <option value="BRL" selected>BRL — Real</option>
+              <option value="USD">USD — Dólar</option>
+              <option value="ARS">ARS — Peso Arg.</option>
+            </select>
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label for="origin-currency">Moeda Origem:</label>
-              <select id="origin-currency" required>
-                <option value="BRL" selected>BRL (Real)</option>
-                <option value="USD">USD (Dólar)</option>
-                <option value="ARS">ARS (Peso Arg.)</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="destination-currency">Moeda Destino:</label>
-              <select id="destination-currency" required>
-                <option value="ARS" selected>ARS (Peso Arg.)</option>
-                <option value="USD">USD (Dólar)</option>
-                <option value="BRL">BRL (Real)</option>
-              </select>
-            </div>
-          </div>
-
-          <button type="button" id="btn-convert" class="btn btn-primary">
-            <span class="btn-text">Converter</span>
-            <div class="spinner hidden" id="convert-spinner"></div>
+          <button type="button" id="btn-swap-currency" aria-label="Inverter moedas" title="Inverter moedas"
+            class="shrink-0 w-10 h-10 mx-auto sm:mx-0 rounded-full border border-slate-300 bg-white hover:bg-slate-100 flex items-center justify-center text-slate-600 transition-transform active:rotate-180">
+            ⇄
           </button>
-        </form>
 
-        <div id="convert-result" class="result-box hidden">
-          <span class="result-label">Resultado:</span>
-          <h3 id="result-value">0.00</h3>
-        </div>
-      </section>
-
-      <!-- Seção 2: Histórico recente -->
-      <section class="card">
-        <div class="card-header">
-          <h2>Últimas 5 Conversões</h2>
-          <button id="btn-refresh-history" class="btn-icon" title="Atualizar Histórico">🔄</button>
-        </div>
-        <div id="history-loading" class="spinner-container hidden">
-          <div class="spinner"></div>
-        </div>
-        <ul id="history-list" class="history-list">
-          <li class="empty-msg">Nenhuma conversão realizada ainda.</li>
-        </ul>
-      </section>
-
-      <!-- Seção 3: Cadastrar/Atualizar Taxa -->
-      <section class="card full-width">
-        <h2>Cadastrar / Atualizar Taxa (Base 1 USD)</h2>
-        <form id="rate-form" class="inline-form" onsubmit="return false;">
-          <div class="form-group">
-            <label for="rate-currency">Moeda (ex: EUR, CLP, BRL):</label>
-            <input type="text" id="rate-currency" placeholder="Ex: EUR" maxlength="5" required>
+          <div class="min-w-0 sm:flex-1">
+            <label for="destination-currency" class="block text-xs font-semibold text-slate-500 mb-1">Para</label>
+            <select id="destination-currency" required
+              class="w-full border border-slate-300 rounded-lg px-3 py-2.5 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-brand/40">
+              <option value="ARS" selected>ARS — Peso Arg.</option>
+              <option value="USD">USD — Dólar</option>
+              <option value="BRL">BRL — Real</option>
+            </select>
           </div>
+        </div>
 
-          <div class="form-group">
-            <label for="rate-value">Quanto 1 USD vale nesta moeda?</label>
-            <input type="number" id="rate-value" step="any" min="0.0001" placeholder="Ex: 0.92" required>
-          </div>
+        <button type="button" id="btn-convert"
+          class="w-full bg-brand hover:bg-brand-dark text-white font-semibold rounded-lg py-3 flex items-center justify-center gap-2 transition-colors">
+          <span class="btn-text">Converter</span>
+          <div class="spinner hidden" id="convert-spinner"></div>
+        </button>
+      </form>
 
-          <button type="button" id="btn-save-rate" class="btn btn-secondary">
-            <span class="btn-text">Salvar Taxa</span>
-            <div class="spinner hidden" id="rate-spinner"></div>
-          </button>
-        </form>
-      </section>
-    </main>
+      <div id="convert-result" class="hidden bg-blue-50 border-l-4 border-brand rounded-lg p-4">
+        <span class="text-xs text-slate-500">Resultado</span>
+        <h3 id="result-value" class="text-2xl font-bold text-brand">0,00</h3>
+        <p id="rate-summary" class="text-xs text-slate-500 mt-1"></p>
+      </div>
+    </section>
 
-    <div id="toast" class="toast hidden"></div>
-  </div>
+    <!-- Histórico -->
+    <section id="section-historico" class="min-w-0 bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-slate-800">Últimas 5 conversões</h2>
+        <button id="btn-refresh-history" title="Atualizar histórico" class="text-slate-400 hover:text-slate-700 transition-colors">🔄</button>
+      </div>
+      <div id="history-loading" class="hidden flex justify-center py-3"><div class="spinner"></div></div>
+      <ul id="history-list" class="flex flex-col divide-y divide-slate-100 text-sm">
+        <li class="empty-msg">Nenhuma conversão realizada ainda.</li>
+      </ul>
+    </section>
+
+    <!-- Status BCB -->
+    <section id="section-bcb" class="min-w-0 md:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col gap-3">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <h2 class="text-lg font-semibold text-slate-800">Taxas via Banco Central (PTAX)</h2>
+        <button id="btn-sync-bcb"
+          class="text-xs font-semibold bg-accent/10 text-accent-dark hover:bg-accent/20 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1.5">
+          <span id="sync-bcb-label">Sincronizar agora</span>
+          <div class="spinner hidden" id="sync-bcb-spinner"></div>
+        </button>
+      </div>
+      <p class="text-sm text-slate-500">
+        BRL e USD são atualizados automaticamente ao iniciar a aplicação, buscando a cotação de fechamento oficial do PTAX.
+        ARS não é coberto pelo Banco Central e usa um valor de referência manual, atualizável abaixo.
+      </p>
+      <div id="bcb-sync-result" class="hidden text-sm bg-slate-50 rounded-lg p-3 font-mono text-slate-700"></div>
+    </section>
+
+    <!-- Cadastro manual de taxa -->
+    <section id="section-cadastro" class="min-w-0 md:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col gap-3">
+      <h2 class="text-lg font-semibold text-slate-800">Cadastrar / atualizar taxa manualmente</h2>
+      <p class="text-xs text-slate-500">Quanto vale 1 USD na moeda informada.</p>
+      <form id="rate-form" onsubmit="return false;" class="flex flex-col sm:flex-row gap-3 sm:items-end">
+        <div class="flex-1">
+          <label for="rate-currency" class="block text-xs font-semibold text-slate-500 mb-1">Moeda (ex: EUR, CLP)</label>
+          <input type="text" id="rate-currency" maxlength="5" placeholder="Ex: EUR" required
+            class="w-full border border-slate-300 rounded-lg px-3 py-2.5 uppercase focus:outline-none focus:ring-2 focus:ring-brand/40">
+        </div>
+        <div class="flex-1">
+          <label for="rate-value" class="block text-xs font-semibold text-slate-500 mb-1">1 USD =</label>
+          <input type="number" id="rate-value" step="any" min="0.0001" placeholder="Ex: 0.92" required
+            class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/40">
+        </div>
+        <button type="button" id="btn-save-rate"
+          class="bg-accent hover:bg-accent-dark text-white font-semibold rounded-lg px-5 py-2.5 flex items-center justify-center gap-2 transition-colors">
+          <span class="btn-text">Salvar</span>
+          <div class="spinner hidden" id="rate-spinner"></div>
+        </button>
+      </form>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Navegação mobile: ancoras para as secoes desta mesma pagina -->
+  <nav class="fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200 flex md:hidden">
+    <a href="#section-conversor" class="flex-1 flex flex-col items-center gap-0.5 py-2.5 text-slate-600 hover:text-brand">
+      <span class="text-lg leading-none">💱</span><span class="text-[11px] font-semibold">Conversor</span>
+    </a>
+    <a href="#section-historico" class="flex-1 flex flex-col items-center gap-0.5 py-2.5 text-slate-600 hover:text-brand">
+      <span class="text-lg leading-none">🕘</span><span class="text-[11px] font-semibold">Histórico</span>
+    </a>
+    <a href="#section-bcb" class="flex-1 flex flex-col items-center gap-0.5 py-2.5 text-slate-600 hover:text-brand">
+      <span class="text-lg leading-none">🏦</span><span class="text-[11px] font-semibold">Base BCB</span>
+    </a>
+  </nav>
 
   <script src="script.js"></script>
 </body>

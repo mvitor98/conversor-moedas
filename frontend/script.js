@@ -39,12 +39,23 @@ function toggleLoading(btnId, spinnerId, isLoading) {
   }
 }
 
+function swapCurrencies() {
+  const originSelect = document.getElementById("origin-currency");
+  const destSelect = document.getElementById("destination-currency");
+  if (!originSelect || !destSelect) return;
+
+  const temp = originSelect.value;
+  originSelect.value = destSelect.value;
+  destSelect.value = temp;
+}
+
 async function executeConversion() {
   const amountInput = document.getElementById("amount");
   const originSelect = document.getElementById("origin-currency");
   const destSelect = document.getElementById("destination-currency");
   const resultBox = document.getElementById("convert-result");
   const resultValue = document.getElementById("result-value");
+  const rateSummary = document.getElementById("rate-summary");
 
   const amount = amountInput ? amountInput.value : "";
   const origin = originSelect ? originSelect.value : "BRL";
@@ -70,6 +81,10 @@ async function executeConversion() {
 
     const formattedVal = formatCurrencyValue(data.convertido);
     if (resultValue) resultValue.textContent = `${formattedVal} ${data.moeda_destino}`;
+    if (rateSummary && data.valor) {
+      const taxaImplicita = data.convertido / data.valor;
+      rateSummary.textContent = `1 ${data.moeda_origem} = ${formatCurrencyValue(taxaImplicita)} ${data.moeda_destino}`;
+    }
     if (resultBox) resultBox.classList.remove("hidden");
     await loadHistory();
   } catch (err) {
@@ -112,6 +127,43 @@ async function executeSaveRate() {
     showToast(err.message, "error");
   } finally {
     toggleLoading("btn-save-rate", "rate-spinner", false);
+  }
+}
+
+async function syncBcbRates() {
+  const btn = document.getElementById("btn-sync-bcb");
+  const label = document.getElementById("sync-bcb-label");
+  const spinner = document.getElementById("sync-bcb-spinner");
+  const resultBox = document.getElementById("bcb-sync-result");
+
+  if (btn) btn.disabled = true;
+  if (spinner) spinner.classList.remove("hidden");
+  if (label) label.textContent = "Sincronizando...";
+  if (resultBox) resultBox.classList.add("hidden");
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/taxas/sincronizar-bcb`, { method: "POST" });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.erro || "Erro ao sincronizar com o BCB.");
+    }
+
+    if (resultBox) {
+      const taxas = Object.entries(data.taxas || {})
+        .map(([moeda, taxa]) => `${moeda}: ${formatCurrencyValue(taxa)}`)
+        .join(" • ");
+      resultBox.textContent = taxas;
+      resultBox.classList.remove("hidden");
+    }
+    showToast("Taxas sincronizadas com o BCB/PTAX!", "success");
+  } catch (err) {
+    console.error("[BCB Sync Error]:", err);
+    showToast(err.message, "error");
+  } finally {
+    if (btn) btn.disabled = false;
+    if (spinner) spinner.classList.add("hidden");
+    if (label) label.textContent = "Sincronizar agora";
   }
 }
 
@@ -166,10 +218,14 @@ if (typeof window !== "undefined") {
     const btnConvert = document.getElementById("btn-convert");
     const btnSaveRate = document.getElementById("btn-save-rate");
     const btnRefreshHistory = document.getElementById("btn-refresh-history");
+    const btnSwapCurrency = document.getElementById("btn-swap-currency");
+    const btnSyncBcb = document.getElementById("btn-sync-bcb");
 
     if (btnConvert) btnConvert.addEventListener("click", executeConversion);
     if (btnSaveRate) btnSaveRate.addEventListener("click", executeSaveRate);
     if (btnRefreshHistory) btnRefreshHistory.addEventListener("click", loadHistory);
+    if (btnSwapCurrency) btnSwapCurrency.addEventListener("click", swapCurrencies);
+    if (btnSyncBcb) btnSyncBcb.addEventListener("click", syncBcbRates);
     loadHistory();
   });
 }
@@ -182,6 +238,8 @@ if (typeof module !== "undefined" && module.exports) {
     executeSaveRate,
     loadHistory,
     updateCurrencySelects,
+    swapCurrencies,
+    syncBcbRates,
     formatCurrencyValue,
     API_BASE_URL
   };
