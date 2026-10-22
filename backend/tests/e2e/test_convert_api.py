@@ -37,6 +37,15 @@ def test_conversion_with_non_numeric_amount_returns_400() -> None:
     assert "erro" in response.json()
 
 
+def test_conversion_with_unregistered_currency_returns_404() -> None:
+    """Testa que converter com uma moeda sem taxa cadastrada retorna 404."""
+    client.post("/taxas/BRL/5.0")
+
+    response = client.get("/converter/100/BRL/XYZ")
+    assert response.status_code == 404
+    assert "erro" in response.json()
+
+
 def test_get_history_returns_404_when_empty() -> None:
     """Testa que o histórico vazio retorna 404, conforme o contrato da API."""
     response = client.get("/conversoes")

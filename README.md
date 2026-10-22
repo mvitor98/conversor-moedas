@@ -59,7 +59,8 @@ Localmente (`docker compose up`), o frontend roda atrás de um Nginx que também
 
 ### Frontend
 * **Tecnologias:** HTML5 Semântico, Tailwind CSS (via CDN) e JavaScript Vanilla (ES6+) — sem build step.
-* **UI:** layout responsivo (uma página, mobile-first), painel lateral (drawer) de taxas cadastradas, toasts de erro/sucesso, estados de carregamento e vazio para cada lista.
+* **Identidade visual:** estilo fintech (paleta zinc/preto, tipografia Instrument Sans + JetBrains Mono para valores monetários), conversor em formato de widget de troca ("Valor" / "Valor Convertido" com botão de inverter sobreposto entre os dois campos).
+* **UI:** layout responsivo (uma página, mobile-first), painel lateral (drawer) com taxas cadastradas, histórico de 7 dias e o cadastro de taxa, toasts de erro/sucesso, estados de carregamento e vazio para cada lista.
 * **Infraestrutura em produção:** arquivos estáticos servidos pela CDN da Vercel.
 
 ### Qualidade e Testes
@@ -76,17 +77,16 @@ Cada taxa cadastrada carrega uma tag de proveniência (`fonte`) e um timestamp (
 * **`bcb`** — sincronizada automaticamente com a **API PTAX (Olinda) do Banco Central do Brasil**. No startup da aplicação (e também sob demanda via `POST /taxas/sincronizar-bcb`), o sistema busca a cotação de fechamento PTAX mais recente e grava `BRL` e `USD` com essa fonte. Qualquer outra moeda coberta pelo PTAX (AUD, CAD, CHF, DKK, EUR, GBP, JPY, NOK, SEK) pode ser sincronizada individualmente via `POST /taxas/sincronizar-bcb?moeda={moeda}` — como o PTAX só cota moedas estrangeiras contra o BRL, a taxa final é calculada via cruzamento (`BRL/USD ÷ BRL/moeda`).
 * **`manual`** — cadastrada via `POST /taxas/{moeda}/{valor}`, ou usada como valor de referência inicial para moedas que o PTAX não cobre (ex: **ARS**, peso argentino — o Banco Central não publica cotação oficial para essa moeda). Pode ser atualizada a qualquer momento pelo mesmo endpoint.
 
-Falhas ao consultar o BCB (API fora do ar, sem cotação no período) nunca derrubam a aplicação: ficam registradas em log e a API continua funcionando com as taxas já existentes.
+Falhas ao consultar o BCB (API fora do ar, sem cotação no período) nunca derrubam a aplicação: ficam registradas em log e a API continua funcionando com as taxas já existentes. Taxas gravadas antes do campo `atualizado_em` existir retornam esse valor como `null` em vez de quebrar a resposta — compatibilidade retroativa tratada tanto na camada de dados quanto no DTO (`Optional[str]`).
 
-No formulário de cadastro de taxa, o frontend oferece um seletor **Manual / Buscar no BCB**: em modo BCB, basta informar a moeda e o valor é obtido automaticamente a partir do PTAX.
+### Painel lateral: taxas, histórico e cadastro
 
-### Painel de taxas cadastradas e histórico de 7 dias
-
-O botão **"Taxas"** no cabeçalho abre um painel lateral (desliza da direita) com duas abas:
+O botão **"Taxas"** no cabeçalho (mesmo tamanho do botão "Sincronizar agora") abre um painel lateral (desliza da direita) com três abas:
 * **Cadastradas** — todas as taxas atualmente em vigor (`GET /taxas`), com moeda, valor, fonte (badge) e timestamp de atualização.
 * **Histórico (7 dias)** — mudanças de valor registradas nos últimos 7 dias (`GET /taxas/historico`), feed combinado de todas as moedas. Uma entrada só é criada quando o valor **realmente muda** — re-sincronizações do BCB com o mesmo valor (comuns a cada restart do servidor, frequente no plano free do Render) não geram ruído no histórico.
+* **Cadastrar** — formulário de cadastro/atualização de taxa com o seletor **Manual / Buscar no BCB** (em modo BCB, basta informar a moeda e o valor é obtido automaticamente a partir do PTAX). No mobile, o atalho "Cadastro" da barra inferior abre o painel direto nessa aba.
 
-O cabeçalho da página também mostra a "Última atualização" global (a mais recente entre todas as moedas), derivada da mesma chamada a `GET /taxas` — sem endpoint ou estado extra no backend.
+O rodapé do painel mostra a "Última atualização" global (a mais recente entre todas as moedas), derivada da mesma chamada a `GET /taxas` — sem endpoint ou estado extra no backend.
 
 ---
 
@@ -142,7 +142,7 @@ Ambas as suítes também rodam automaticamente no CI (GitHub Actions) a cada pus
 | `GET` | `/taxas` | Lista todas as taxas cadastradas, mais recente primeiro | `200 OK` (`404` se não houver nenhuma) |
 | `GET` | `/taxas/historico` | Mudanças de valor de taxa nos últimos 7 dias (feed combinado) | `200 OK` (`404` se vazio) |
 | `POST` | `/taxas/sincronizar-bcb` | Sincroniza com o PTAX do Banco Central — sem `?moeda=`, atualiza BRL/USD; com `?moeda=X`, só aquela moeda | `200 OK` (`502` se o BCB estiver indisponível) |
-| `GET` | `/converter/{valor}/{origem}/{destino}` | Converte um valor entre duas moedas cadastradas | `200 OK` |
+| `GET` | `/converter/{valor}/{origem}/{destino}` | Converte um valor entre duas moedas cadastradas | `200 OK` (`400` valor inválido ou origem = destino; `404` moeda sem taxa cadastrada) |
 | `GET` | `/conversoes` | Retorna o histórico das últimas 5 conversões | `200 OK` (`404` se vazio) |
 
 Todas as rotas acima retornam **`429 Too Many Requests`** (com header `Retry-After`) se o limite de requisições por IP for excedido — ver **Segurança**.
