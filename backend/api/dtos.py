@@ -1,5 +1,6 @@
 ﻿"""Módulo contendo os Data Transfer Objects (DTOs) para a API."""
 
+from typing import Dict
 from pydantic import BaseModel, Field
 
 
@@ -16,6 +17,11 @@ class RateResponseDTO(BaseModel):
         ...,
         description="Valor da taxa gravada.",
         json_schema_extra={"example": 700.0},
+    )
+    fonte: str = Field(
+        ...,
+        description="Origem da taxa: 'manual' (cadastrada via API) ou 'bcb' (PTAX).",
+        json_schema_extra={"example": "manual"},
     )
 
 
@@ -41,6 +47,17 @@ class ConversionResponseDTO(BaseModel):
         ...,
         description="Valor retornado.",
         json_schema_extra={"example": 14000.0},
+    )
+
+
+class BcbSyncResponseDTO(BaseModel):
+    """DTO de resposta para a sincronização de taxas com o BCB/PTAX."""
+
+    mensagem: str = Field(..., description="Mensagem de confirmação da sincronização.")
+    taxas: Dict[str, float] = Field(
+        ...,
+        description="Taxas sincronizadas (moeda -> valor em relação a 1 USD).",
+        json_schema_extra={"example": {"BRL": 5.0134, "USD": 1.0}},
     )
 
 

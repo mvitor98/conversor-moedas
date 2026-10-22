@@ -12,16 +12,30 @@ class RedisRateDAO:
     def __init__(self, redis_client):
         self.redis = redis_client
 
-    def save_rate(self, currency: str, rate: float) -> dict:
+    def save_rate(
+        self, currency: str, rate: float, source: str = constants.RATE_SOURCE_MANUAL
+    ) -> dict:
         currency_upper = currency.upper()
-        self.redis.hset(self.HASH_KEY, currency_upper, str(rate))
-        return {"moeda": currency_upper, "taxa": rate}
+        payload = json.dumps({"taxa": rate, "fonte": source})
+        self.redis.hset(self.HASH_KEY, currency_upper, payload)
+        return {"moeda": currency_upper, "taxa": rate, "fonte": source}
 
     def get_rate(self, currency: str) -> Optional[float]:
+        details = self.get_rate_details(currency)
+        return details["taxa"] if details else None
+
+    def get_rate_details(self, currency: str) -> Optional[dict]:
         val = self.redis.hget(self.HASH_KEY, currency.upper())
-        if val is not None:
-            return float(val)
-        return None
+        if val is None:
+            return None
+
+        try:
+            parsed = json.loads(val)
+            return {"taxa": float(parsed["taxa"]), "fonte": parsed["fonte"]}
+        except (ValueError, TypeError, KeyError):
+            # Compatibilidade com taxas gravadas antes da tag de fonte existir
+            # (valor numérico puro, sem JSON).
+            return {"taxa": float(val), "fonte": constants.RATE_SOURCE_MANUAL}
 
 
 class RedisHistoryDAO:

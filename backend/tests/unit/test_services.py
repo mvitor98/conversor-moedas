@@ -38,3 +38,33 @@ def test_convert_missing_rate_raises_key_error() -> None:
     service: CurrencyService = CurrencyService(mock_strategy, MagicMock(), MagicMock())
     with pytest.raises(KeyError, match=r"Moeda\(s\) sem taxa cadastrada"):
         service.convert(100.0, "BRL", "ARS")
+
+
+def test_save_rate_defaults_to_manual_source() -> None:
+    """Testa se save_rate grava a taxa com fonte 'manual' por padrão."""
+    mock_rate_dao: MagicMock = MagicMock()
+    service: CurrencyService = CurrencyService(MagicMock(), mock_rate_dao, MagicMock())
+
+    service.save_rate("BRL", 5.0)
+    mock_rate_dao.save_rate.assert_called_once_with("BRL", 5.0, "manual")
+
+
+def test_save_rate_accepts_explicit_source() -> None:
+    """Testa se save_rate repassa uma fonte explícita (ex: 'bcb') ao DAO."""
+    mock_rate_dao: MagicMock = MagicMock()
+    service: CurrencyService = CurrencyService(MagicMock(), mock_rate_dao, MagicMock())
+
+    service.save_rate("USD", 1.0, fonte="bcb")
+    mock_rate_dao.save_rate.assert_called_once_with("USD", 1.0, "bcb")
+
+
+def test_get_history_raises_key_error_when_empty() -> None:
+    """Testa se get_history gera KeyError (-> 404) quando não há conversões."""
+    mock_history_dao: MagicMock = MagicMock()
+    mock_history_dao.get_recent_conversions.return_value = []
+
+    service: CurrencyService = CurrencyService(
+        MagicMock(), MagicMock(), mock_history_dao
+    )
+    with pytest.raises(KeyError, match="Nenhuma conversão registrada"):
+        service.get_history()

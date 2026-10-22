@@ -14,12 +14,14 @@ class CurrencyService:
         self.rate_dao = rate_dao
         self.history_dao = history_dao
 
-    def save_rate(self, moeda: str, valor: float) -> dict:
+    def save_rate(
+        self, moeda: str, valor: float, fonte: str = constants.RATE_SOURCE_MANUAL
+    ) -> dict:
         moeda = moeda.upper()
         if valor <= 0:
             raise ValueError("O valor da taxa deve ser maior que zero.")
         valor_arredondado = round(valor, 4)
-        return self.rate_dao.save_rate(moeda, valor_arredondado)
+        return self.rate_dao.save_rate(moeda, valor_arredondado, fonte)
 
     def convert(self, valor: float, origem: str, destino: str) -> dict:
         origem = origem.upper()
@@ -57,8 +59,13 @@ class CurrencyService:
 
     def get_history(self) -> list:
         if hasattr(self.history_dao, "get_recent_conversions"):
-            return self.history_dao.get_recent_conversions()
-        return self.history_dao.get_history()
+            historico = self.history_dao.get_recent_conversions()
+        else:
+            historico = self.history_dao.get_history()
+
+        if not historico:
+            raise KeyError("Nenhuma conversão registrada.")
+        return historico
 
 
 CurrencyConverterService = CurrencyService
