@@ -50,7 +50,7 @@
       </div>
       <form id="convert-form" onsubmit="return false;" class="flex flex-col gap-0 flex-1">
         <div class="rounded-2xl bg-tint p-5">
-          <div class="font-mono text-[11px] font-medium uppercase tracking-[.14em] text-zinc-500">Você envia</div>
+          <div class="font-mono text-[11px] font-medium uppercase tracking-[.14em] text-zinc-500">Valor</div>
           <div class="flex items-center gap-3 mt-3">
             <label for="amount" class="sr-only">Valor</label>
             <input type="number" id="amount" step="any" min="0.01" placeholder="0,00" required class="amount">
@@ -64,11 +64,11 @@
         </div>
 
         <div class="flex justify-center -my-5 relative z-10">
-          <button type="button" id="btn-swap-currency" aria-label="Inverter moedas" title="Inverter moedas" class="w-11 h-11 rounded-xl bg-zinc-950 text-white border-4 border-white flex items-center justify-center hover:bg-zinc-800 transition-transform active:rotate-180"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3"/></svg></button>
+          <button type="button" id="btn-swap-currency" aria-label="Inverter moedas" title="Inverter moedas" class="w-11 h-11 rounded-xl bg-zinc-950 text-white border-4 border-white flex items-center justify-center hover:bg-zinc-800"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3"/></svg></button>
         </div>
 
         <div class="rounded-2xl bg-mint/60 p-5 mb-5">
-          <div class="font-mono text-[11px] font-medium uppercase tracking-[.14em] text-zinc-500">Você recebe</div>
+          <div class="font-mono text-[11px] font-medium uppercase tracking-[.14em] text-zinc-500">Valor Convertido</div>
           <div class="flex items-center gap-3 mt-3">
             <div class="flex-1 min-w-0">
               <div id="convert-result" class="hidden">
