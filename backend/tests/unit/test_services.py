@@ -40,6 +40,15 @@ def test_convert_missing_rate_raises_key_error() -> None:
         service.convert(100.0, "BRL", "ARS")
 
 
+@pytest.mark.parametrize("moeda_invalida", ["", "AB", "ABCDEF", "123", "BR1", "R$"])
+def test_convert_rejects_malformed_currency_code(moeda_invalida: str) -> None:
+    """Testa que um código de moeda com formato inválido gera ValueError (-> 400),
+    distinto do KeyError (-> 404) de uma moeda bem formada sem taxa cadastrada."""
+    service: CurrencyService = CurrencyService(MagicMock(), MagicMock(), MagicMock())
+    with pytest.raises(ValueError, match="não é um código de moeda válido"):
+        service.convert(100.0, moeda_invalida, "ARS")
+
+
 def test_save_rate_defaults_to_manual_source() -> None:
     """Testa se save_rate grava a taxa com fonte 'manual' por padrão."""
     mock_rate_dao: MagicMock = MagicMock()
@@ -56,6 +65,14 @@ def test_save_rate_accepts_explicit_source() -> None:
 
     service.save_rate("USD", 1.0, fonte="bcb")
     mock_rate_dao.save_rate.assert_called_once_with("USD", 1.0, "bcb")
+
+
+@pytest.mark.parametrize("moeda_invalida", ["", "AB", "ABCDEF", "123", "BR1"])
+def test_save_rate_rejects_malformed_currency_code(moeda_invalida: str) -> None:
+    """Testa que cadastrar uma moeda com formato inválido gera ValueError (-> 400)."""
+    service: CurrencyService = CurrencyService(MagicMock(), MagicMock(), MagicMock())
+    with pytest.raises(ValueError, match="não é um código de moeda válido"):
+        service.save_rate(moeda_invalida, 5.0)
 
 
 def test_get_history_raises_key_error_when_empty() -> None:

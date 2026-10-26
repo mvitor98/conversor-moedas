@@ -1,3 +1,5 @@
+import re
+
 from backend.core import constants
 from backend.domain.strategies import RateStrategy
 from backend.infrastructure.daos import RedisHistoryDAO, RedisRateDAO
@@ -14,10 +16,21 @@ class CurrencyService:
         self.rate_dao = rate_dao
         self.history_dao = history_dao
 
+    @staticmethod
+    def _validar_formato_moeda(moeda: str) -> None:
+        """Rejeita códigos de moeda com formato inválido (400), antes de
+        verificar se há taxa cadastrada (404)."""
+        if not re.match(constants.CURRENCY_CODE_PATTERN, moeda):
+            raise ValueError(
+                f"'{moeda}' não é um código de moeda válido "
+                "(use de 3 a 5 letras, ex: BRL, EUR, CLP)."
+            )
+
     def save_rate(
         self, moeda: str, valor: float, fonte: str = constants.RATE_SOURCE_MANUAL
     ) -> dict:
         moeda = moeda.upper()
+        self._validar_formato_moeda(moeda)
         if valor <= 0:
             raise ValueError("O valor da taxa deve ser maior que zero.")
         valor_arredondado = round(valor, 4)
@@ -33,6 +46,8 @@ class CurrencyService:
     def convert(self, valor: float, origem: str, destino: str) -> dict:
         origem = origem.upper()
         destino = destino.upper()
+        self._validar_formato_moeda(origem)
+        self._validar_formato_moeda(destino)
 
         if origem == destino:
             raise ValueError("A moeda de origem e destino não pode ser igual.")

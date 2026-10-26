@@ -18,6 +18,13 @@ RATE_SOURCE_BCB: str = "bcb"
 # Moeda base do sistema (sempre 1.0 em relação a si mesma)
 BASE_CURRENCY: str = "USD"
 
+# Formato aceito para códigos de moeda: letras apenas, 3 a 5 caracteres (cobre
+# o padrão ISO 4217 de 3 letras e códigos um pouco maiores). Usado para
+# rejeitar entradas obviamente inválidas (400 "moeda não suportada/inexistente")
+# antes mesmo de verificar se há taxa cadastrada (404) — não restringe quais
+# moedas podem ser cadastradas, só o formato do código.
+CURRENCY_CODE_PATTERN: str = r"^[A-Z]{3,5}$"
+
 # ARS não é coberto pela API PTAX do Banco Central (ver bcb_client.py). Valor de
 # referência inicial para pré-carregamento; atualizável via POST /taxas/ARS/{valor}.
 ARS_FALLBACK_RATE: float = 1000.0

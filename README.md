@@ -81,11 +81,18 @@ Taxas de fonte `bcb` **não podem ser excluídas** (`DELETE /taxas/{moeda}` reto
 
 Falhas ao consultar o BCB (API fora do ar, sem cotação no período) nunca derrubam a aplicação: ficam registradas em log e a API continua funcionando com as taxas já existentes. Taxas gravadas antes do campo `atualizado_em` existir retornam esse valor como `null` em vez de quebrar a resposta — compatibilidade retroativa tratada tanto na camada de dados quanto no DTO (`Optional[str]`).
 
-### Painel lateral: taxas, histórico e cadastro
+### ⚠️ Sobre o exemplo do enunciado (100 BRL → 14.000 ARS)
+
+O exemplo do desafio assume taxas fictícias fixas (USD = 1, BRL = 5, ARS = 700). Em produção, **BRL e USD vêm da cotação real do PTAX** e são ressincronizados automaticamente a cada subida da aplicação (o plano free do Render hiberna e reinicia com frequência) e sob demanda via `POST /taxas/sincronizar-bcb`. Isso tem uma consequência direta: se você cadastrar `BRL = 5` manualmente para reproduzir o exemplo, esse valor **será sobrescrito** na próxima sincronização com o BCB (automática ou manual), e um `GET /converter/100/BRL/ARS` devolverá o valor convertido pela cotação real do dia, não os 14.000 do enunciado.
+* **ARS não sofre esse problema** — não é coberto pelo PTAX, então um valor cadastrado manualmente para ele persiste até ser alterado de novo manualmente.
+* Para reproduzir o exemplo exatamente como no enunciado, cadastre as três moedas manualmente (`POST /taxas/BRL/5`, `POST /taxas/USD/1`, `POST /taxas/ARS/700`) e **não** dispare uma sincronização com o BCB (nem pelo botão "Sincronizar agora", nem reiniciando a API) antes de testar.
+* Os testes automatizados (`test_conversion_flow_e2e`, `test_convert_success`) usam exatamente esses números fictícios do enunciado contra um Redis isolado (fakeredis), sem qualquer chamada real ao BCB — por isso são determinísticos e sempre reproduzem 100 BRL → 14.000 ARS.
+
+### Painel lateral: taxas, histórico de taxas e cadastro
 
 O botão **"Taxas"** no cabeçalho (mesmo tamanho do botão "Sincronizar agora") abre um painel lateral (desliza da direita) com três abas:
 * **Cadastradas** — todas as taxas atualmente em vigor (`GET /taxas`), com moeda, valor, fonte (badge) e timestamp de atualização. Taxas de fonte `manual` têm um ícone de exclusão (com confirmação); taxas `bcb` não, já que não podem ser excluídas.
-* **Histórico (7 dias)** — mudanças de valor registradas nos últimos 7 dias (`GET /taxas/historico`), feed combinado de todas as moedas. Uma entrada só é criada quando o valor **realmente muda** — re-sincronizações do BCB com o mesmo valor (comuns a cada restart do servidor, frequente no plano free do Render) não geram ruído no histórico.
+* **Histórico de Taxas** — mudanças de **valor de taxa de câmbio** nos últimos 7 dias (`GET /taxas/historico`), feed combinado de todas as moedas. Uma entrada só é criada quando o valor **realmente muda** — re-sincronizações do BCB com o mesmo valor (comuns a cada restart do servidor, frequente no plano free do Render) não geram ruído no histórico. **Não confundir** com o card "Últimas 5 conversões" da tela principal: um é histórico de *taxas* (quando a cotação de uma moeda mudou), o outro é histórico de *conversões* (operações que você realizou no conversor) — são conceitos independentes, com endpoints e janelas de retenção diferentes.
 * **Cadastrar** — formulário de cadastro/atualização de taxa com o seletor **Manual / Buscar no BCB** (em modo BCB, basta informar a moeda e o valor é obtido automaticamente a partir do PTAX). No mobile, o atalho "Cadastro" da barra inferior abre o painel direto nessa aba.
 
 O rodapé do painel mostra a "Última atualização" global (a mais recente entre todas as moedas), derivada da mesma chamada a `GET /taxas` — sem endpoint ou estado extra no backend.
@@ -140,15 +147,110 @@ Ambas as suítes também rodam automaticamente no CI (GitHub Actions) a cada pus
 
 | Método | Endpoint | Descrição | Retorno Esperado |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/taxas/{moeda}/{valor}` | Cadastra ou atualiza uma taxa em relação ao USD base (fonte `manual`) | `201 Created` |
+| `POST` | `/taxas/{moeda}/{valor}` | Cadastra ou atualiza uma taxa em relação ao USD base (fonte `manual`) | `201 Created` (`400` valor inválido/≤0 ou código de moeda com formato inválido) |
 | `DELETE` | `/taxas/{moeda}` | Exclui uma taxa cadastrada — só para fonte `manual` | `200 OK` (`400` se a fonte for `bcb`; `404` se a moeda não existir) |
 | `GET` | `/taxas` | Lista todas as taxas cadastradas, mais recente primeiro | `200 OK` (`404` se não houver nenhuma) |
 | `GET` | `/taxas/historico` | Mudanças de valor de taxa nos últimos 7 dias (feed combinado) | `200 OK` (`404` se vazio) |
-| `POST` | `/taxas/sincronizar-bcb` | Sincroniza com o PTAX do Banco Central — sem `?moeda=`, atualiza BRL/USD e toda moeda já cadastrada coberta pelo PTAX; com `?moeda=X`, só aquela moeda | `200 OK` (`502` se BRL/USD não puderem ser sincronizados) |
-| `GET` | `/converter/{valor}/{origem}/{destino}` | Converte um valor entre duas moedas cadastradas | `200 OK` (`400` valor inválido ou origem = destino; `404` moeda sem taxa cadastrada) |
+| `POST` | `/taxas/sincronizar-bcb` | Sincroniza com o PTAX do Banco Central — sem `?moeda=`, atualiza BRL/USD e toda moeda já cadastrada coberta pelo PTAX; com `?moeda=X`, só aquela moeda | `200 OK` (`400` moeda fora da cobertura do PTAX; `502` se BRL/USD não puderem ser sincronizados) |
+| `GET` | `/converter/{valor}/{origem}/{destino}` | Converte um valor entre duas moedas cadastradas | `200 OK` (`400` valor inválido, origem = destino ou código de moeda com formato inválido; `404` moeda bem formada mas sem taxa cadastrada) |
 | `GET` | `/conversoes` | Retorna o histórico das últimas 5 conversões | `200 OK` (`404` se vazio) |
 
 Todas as rotas acima retornam **`429 Too Many Requests`** (com header `Retry-After`) se o limite de requisições por IP for excedido — ver **Segurança**.
+
+### Distinção entre `400` (moeda inexistente/não suportada) e `404` (moeda sem taxa)
+
+O enunciado pede `400` para "moeda inexistente ou não suportada" e `404` apenas para "moeda sem taxa cadastrada" — duas situações diferentes que a API agora distingue explicitamente:
+* **`400`** — o código informado não tem um formato válido de moeda (precisa ser só letras, de 3 a 5 caracteres — ex: `BRL`, `EUR`, `CLP`). Cobre tanto um valor claramente inválido (`123`, vazio, símbolos) quanto qualquer string que não pareça um código de moeda.
+* **`404`** — o código tem formato válido, mas nenhuma taxa foi cadastrada para ele ainda (ex: `GET /converter/100/BRL/CHF` antes de alguém cadastrar CHF).
+
+Essa validação de formato não restringe **quais** moedas podem ser cadastradas — continua sendo possível cadastrar qualquer moeda nova (bônus do desafio, ex: `CLP`), só rejeita entradas que claramente não são um código de moeda.
+
+---
+
+## 📋 Exemplos de Uso (curl)
+
+Todos os exemplos abaixo apontam para a API em produção. Troque a URL por `http://localhost:8000` para testar localmente. O Swagger (`/docs`) também traz exemplo de corpo de resposta por endpoint, gerados a partir dos mesmos DTOs usados aqui.
+
+**Cadastrar uma taxa manualmente**
+```bash
+curl -X POST https://conversor-moedas-wtq2.onrender.com/taxas/BRL/5
+```
+```json
+{ "mensagem": "Taxa salva com sucesso.", "moeda": "BRL", "taxa": 5.0, "fonte": "manual", "atualizado_em": "2026-10-25T12:00:00+00:00" }
+```
+
+**Cadastrar com código de moeda inválido → 400**
+```bash
+curl -X POST https://conversor-moedas-wtq2.onrender.com/taxas/X1/5
+```
+```json
+{ "erro": "'X1' não é um código de moeda válido (use de 3 a 5 letras, ex: BRL, EUR, CLP)." }
+```
+
+**Converter um valor entre duas moedas cadastradas**
+```bash
+curl https://conversor-moedas-wtq2.onrender.com/converter/100/BRL/ARS
+```
+```json
+{ "valor": 100.0, "moeda_origem": "BRL", "moeda_destino": "ARS", "convertido": 14000.0 }
+```
+
+**Converter para uma moeda sem taxa cadastrada → 404**
+```bash
+curl https://conversor-moedas-wtq2.onrender.com/converter/100/BRL/CHF
+```
+```json
+{ "erro": "Moeda(s) sem taxa cadastrada." }
+```
+
+**Excluir uma taxa cadastrada manualmente**
+```bash
+curl -X DELETE https://conversor-moedas-wtq2.onrender.com/taxas/CLP
+```
+```json
+{ "mensagem": "Taxa removida com sucesso.", "moeda": "CLP" }
+```
+
+**Listar as taxas cadastradas**
+```bash
+curl https://conversor-moedas-wtq2.onrender.com/taxas
+```
+```json
+[
+  { "moeda": "BRL", "taxa": 5.0377, "fonte": "bcb", "atualizado_em": "2026-10-25T02:01:30+00:00" },
+  { "moeda": "USD", "taxa": 1.0, "fonte": "bcb", "atualizado_em": "2026-10-25T02:01:30+00:00" },
+  { "moeda": "ARS", "taxa": 700.0, "fonte": "manual", "atualizado_em": "2026-10-22T14:51:19+00:00" }
+]
+```
+
+**Histórico de mudanças de taxa (7 dias)**
+```bash
+curl https://conversor-moedas-wtq2.onrender.com/taxas/historico
+```
+```json
+[
+  { "moeda": "EUR", "taxa": 0.8929, "fonte": "bcb", "atualizado_em": "2026-10-25T02:01:58+00:00" }
+]
+```
+
+**Sincronizar com o BCB (todas as moedas elegíveis) e por moeda específica**
+```bash
+curl -X POST https://conversor-moedas-wtq2.onrender.com/taxas/sincronizar-bcb
+curl -X POST "https://conversor-moedas-wtq2.onrender.com/taxas/sincronizar-bcb?moeda=EUR"
+```
+```json
+{ "mensagem": "Taxas sincronizadas com sucesso via BCB/PTAX.", "taxas": { "BRL": 5.0377, "USD": 1.0, "EUR": 0.8929 } }
+```
+
+**Histórico das últimas 5 conversões**
+```bash
+curl https://conversor-moedas-wtq2.onrender.com/conversoes
+```
+```json
+[
+  { "valor": 100.0, "moeda_origem": "BRL", "moeda_destino": "ARS", "convertido": 14000.0 }
+]
+```
 
 ---
 

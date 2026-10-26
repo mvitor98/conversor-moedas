@@ -7,7 +7,11 @@ from pydantic import BaseModel, Field
 class RateResponseDTO(BaseModel):
     """DTO de resposta para a operação de cadastro de taxa de câmbio."""
 
-    mensagem: str = Field(..., description="Mensagem de sucesso do cadastro.")
+    mensagem: str = Field(
+        ...,
+        description="Mensagem de sucesso do cadastro.",
+        json_schema_extra={"example": "Taxa salva com sucesso."},
+    )
     moeda: str = Field(
         ...,
         description="Moeda cadastrada.",
@@ -82,7 +86,11 @@ class RateRecordDTO(BaseModel):
 class RateDeleteResponseDTO(BaseModel):
     """DTO de resposta para a exclusão de uma taxa de câmbio."""
 
-    mensagem: str = Field(..., description="Mensagem de confirmação da exclusão.")
+    mensagem: str = Field(
+        ...,
+        description="Mensagem de confirmação da exclusão.",
+        json_schema_extra={"example": "Taxa removida com sucesso."},
+    )
     moeda: str = Field(
         ..., description="Moeda removida.", json_schema_extra={"example": "EUR"}
     )
@@ -91,7 +99,11 @@ class RateDeleteResponseDTO(BaseModel):
 class BcbSyncResponseDTO(BaseModel):
     """DTO de resposta para a sincronização de taxas com o BCB/PTAX."""
 
-    mensagem: str = Field(..., description="Mensagem de confirmação da sincronização.")
+    mensagem: str = Field(
+        ...,
+        description="Mensagem de confirmação da sincronização.",
+        json_schema_extra={"example": "Taxas sincronizadas com sucesso via BCB/PTAX."},
+    )
     taxas: Dict[str, float] = Field(
         ...,
         description="Taxas sincronizadas (moeda -> valor em relação a 1 USD).",
@@ -102,4 +114,8 @@ class BcbSyncResponseDTO(BaseModel):
 class ErrorResponseDTO(BaseModel):
     """DTO genérico para retorno padronizado de mensagens de erro."""
 
-    erro: str = Field(..., description="Descrição detalhada da falha ocorrida.")
+    erro: str = Field(
+        ...,
+        description="Descrição detalhada da falha ocorrida.",
+        json_schema_extra={"example": "Moeda(s) sem taxa cadastrada."},
+    )

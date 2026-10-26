@@ -129,12 +129,12 @@
     </div>
     <div class="flex border-b border-zinc-200 px-3">
       <button type="button" id="tab-rates-current" data-tab="current" class="flex-1 py-3 text-sm font-medium text-zinc-900 border-b-2 border-zinc-900">Cadastradas</button>
-      <button type="button" id="tab-rates-history" data-tab="history" class="flex-1 py-3 text-sm font-medium text-zinc-500 border-b-2 border-transparent hover:text-zinc-700">Histórico (7 dias)</button>
+      <button type="button" id="tab-rates-history" data-tab="history" class="flex-1 py-3 text-sm font-medium text-zinc-500 border-b-2 border-transparent hover:text-zinc-700">Histórico de Taxas</button>
       <button type="button" id="tab-rates-cadastro" data-tab="cadastro" class="flex-1 py-3 text-sm font-medium text-zinc-500 border-b-2 border-transparent hover:text-zinc-700">Cadastrar</button>
     </div>
     <div class="flex-1 overflow-y-auto p-6">
       <ul id="rates-current-list" class="flex flex-col divide-y divide-zinc-100 text-sm"><li class="empty-msg">Nenhuma taxa cadastrada ainda.</li></ul>
-      <ul id="rates-history-list" class="hidden flex flex-col divide-y divide-zinc-100 text-sm"><li class="empty-msg">Nenhuma mudança nos últimos 7 dias.</li></ul>
+      <ul id="rates-history-list" class="hidden flex flex-col divide-y divide-zinc-100 text-sm"><li class="empty-msg">Nenhuma mudança de taxa nos últimos 7 dias.</li></ul>
       <div id="rates-cadastro-panel" class="hidden flex flex-col gap-5">
         <div class="flex flex-col gap-3">
           <div class="flex rounded-xl bg-tint p-1 gap-1">
@@ -163,7 +163,7 @@
 
   <nav class="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-zinc-200 flex md:hidden">
     <a href="#section-conversor" class="flex-1 flex flex-col items-center gap-1 py-2.5 text-zinc-600 hover:text-zinc-950"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg><span class="text-[11px] font-medium">Conversor</span></a>
-    <a href="#section-historico" class="flex-1 flex flex-col items-center gap-1 py-2.5 text-zinc-600 hover:text-zinc-950"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="text-[11px] font-medium">Histórico</span></a>
+    <a href="#section-historico" class="flex-1 flex flex-col items-center gap-1 py-2.5 text-zinc-600 hover:text-zinc-950"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="text-[11px] font-medium">Conversões</span></a>
     <a href="#section-bcb" class="flex-1 flex flex-col items-center gap-1 py-2.5 text-zinc-600 hover:text-zinc-950"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10 12 4l9 6M5 10v8M10 10v8M14 10v8M19 10v8M3 20h18"/></svg><span class="text-[11px] font-medium">BCB</span></a>
     <button type="button" id="btn-open-cadastro-mobile" class="flex-1 flex flex-col items-center gap-1 py-2.5 text-zinc-600 hover:text-zinc-950"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg><span class="text-[11px] font-medium">Cadastro</span></button>
   </nav>

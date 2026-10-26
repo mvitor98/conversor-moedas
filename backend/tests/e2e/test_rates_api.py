@@ -33,6 +33,14 @@ def test_save_rate_non_numeric_value_returns_400() -> None:
     assert "erro" in response.json()
 
 
+def test_save_rate_with_malformed_currency_code_returns_400() -> None:
+    """Testa que cadastrar com um código de moeda inválido retorna 400
+    'moeda não suportada', não 201 nem 404."""
+    response = client.post("/taxas/X1/5.0")
+    assert response.status_code == 400
+    assert "erro" in response.json()
+
+
 def test_save_rate_response_includes_manual_source() -> None:
     """Testa que o cadastro manual de taxa marca a fonte como 'manual'."""
     response = client.post("/taxas/EUR/6.0")

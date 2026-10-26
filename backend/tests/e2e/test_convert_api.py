@@ -38,11 +38,22 @@ def test_conversion_with_non_numeric_amount_returns_400() -> None:
 
 
 def test_conversion_with_unregistered_currency_returns_404() -> None:
-    """Testa que converter com uma moeda sem taxa cadastrada retorna 404."""
+    """Testa que converter com uma moeda bem formada mas sem taxa cadastrada
+    retorna 404 — distinto do 400 de uma moeda com formato inválido."""
     client.post("/taxas/BRL/5.0")
 
     response = client.get("/converter/100/BRL/XYZ")
     assert response.status_code == 404
+    assert "erro" in response.json()
+
+
+def test_conversion_with_malformed_currency_code_returns_400() -> None:
+    """Testa que um código de moeda com formato inválido (não 3-5 letras)
+    retorna 400 'moeda inexistente/não suportada', não 404."""
+    client.post("/taxas/BRL/5.0")
+
+    response = client.get("/converter/100/BRL/X1")
+    assert response.status_code == 400
     assert "erro" in response.json()
 
 

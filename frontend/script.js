@@ -313,7 +313,7 @@ async function loadRateHistory() {
     const data = await response.json();
 
     if (response.status === 404) {
-      list.innerHTML = '<li class="empty-msg">Nenhuma mudança nos últimos 7 dias.</li>';
+      list.innerHTML = '<li class="empty-msg">Nenhuma mudança de taxa nos últimos 7 dias.</li>';
       return;
     }
 
